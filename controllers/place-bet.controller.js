@@ -15,7 +15,7 @@ const queryHelper = require("../helpers/query.helper");
 const TradingGameData = Mongoose.model('Trading Time Settings');
 const socketHelper = require('../helpers/socket.helper');
 const io = socketHelper.GetSocket();
-                       
+
 
 
 
@@ -27,7 +27,7 @@ const io = socketHelper.GetSocket();
 const addNewPlacebit = async (req, res) => {
   try {
     const pdata = req.body;
-    const userWalletGameAmt = await UserWallet.findOne({ userId: ObjectId(pdata.userLoginId), currencyId: ObjectId(pdata.currencyId) }, { optionsGameAmount: 1, optionsHold:1 });
+    const userWalletGameAmt = await UserWallet.findOne({ userId: ObjectId(pdata.userLoginId), currencyId: ObjectId(pdata.currencyId) }, { optionsGameAmount: 1, optionsHold: 1 });
 
     if (!userWalletGameAmt) {
       res.send({
@@ -62,7 +62,7 @@ const addNewPlacebit = async (req, res) => {
           await UserWallet.findOneAndUpdate({ userId: result.userId, currencyId: pdata.currencyId }, {
             $set: {
               optionsGameAmount: updatedWalletGameAmt,
-              optionsHold : updatedHoldAmt
+              optionsHold: updatedHoldAmt
             }
           }).then(async (comp) => {
             //=========History updation in gamePredictionBalanceAmt Collection======//
@@ -99,31 +99,31 @@ const getUserBasedPrediction = async (data) => {
   try {
     const { userLoginId } = data;
     // console.log("userLoginId===",userLoginId);
-    
-    if(userLoginId){
+
+    if (userLoginId) {
       const userPredictionData = await OptionsGame.find({ userId: userLoginId }).sort({ _id: -1 });
       // console.log("userPredictionData--",userPredictionData);
-  
+
       if (userPredictionData) {
-        return({ status: true, data: userPredictionData });
+        return ({ status: true, data: userPredictionData });
       } else {
-        return({ status: false, data: [] });
+        return ({ status: false, data: [] });
       }
-  
-    }else{
-      return({ status: false, data: [] });
+
+    } else {
+      return ({ status: false, data: [] });
     }
-    
+
   } catch (error) {
     console.log("getUserBasedPrediction error: ", error);
-    return({ status: false, message: "Something went wrong! Please try again someother time" });
+    return ({ status: false, message: "Something went wrong! Please try again someother time" });
   }
 };
 
 const closedBetFromUser = async (req, res) => {
   const session = await Mongoose.startSession();
   try {
-    const pdata = req.body;        
+    const pdata = req.body;
     session.startTransaction(); // Start transaction
 
     // Check and lock the prediction to prevent concurrent updates
@@ -131,7 +131,7 @@ const closedBetFromUser = async (req, res) => {
       { _id: pdata.predictionId, isProcessing: { $ne: true } },
       { $set: { isProcessing: true } },
       { new: true, session }
-    );    
+    );
 
     if (!findCloseBetData) {
       await session.abortTransaction();
@@ -141,7 +141,7 @@ const closedBetFromUser = async (req, res) => {
     const userWalletGameAmt = await UserWallet.findOne(
       { userId: ObjectId(pdata.userLoginId), currencyId: pdata.currencyId },
       { optionsGameAmount: 1, optionsHold: 1 }
-    ).session(session);    
+    ).session(session);
 
     if (!userWalletGameAmt) {
       await session.abortTransaction();
@@ -152,7 +152,10 @@ const closedBetFromUser = async (req, res) => {
     let previousHoldGameAmt = userWalletGameAmt.optionsHold;
     let originalWager = findCloseBetData.predictionAmt;
 
-    if (parseFloat(pdata.profitAndLoss) > 0) {      
+    const profitLoss = parseFloat(pdata.profitAndLoss);
+    
+
+    if (profitLoss > 0) {
       // Handle win case
       const updatedPrediction = await OptionsGame.findByIdAndUpdate(
         pdata.predictionId,
@@ -171,7 +174,7 @@ const closedBetFromUser = async (req, res) => {
       const currentBalance = previousWalletGameAmt + updatedWalletBalance;
       let updateHoldAmt = previousHoldGameAmt > 0 ? previousHoldGameAmt - originalWager : previousHoldGameAmt;
       let updateCurrentHoldAmt = parseFloat(updateHoldAmt).toFixed(2);
-      
+
       const balanceEntry = new OptionsGameBalance({
         userId: ObjectId(pdata.userLoginId),
         currencyId: pdata.currencyId,
@@ -189,10 +192,54 @@ const closedBetFromUser = async (req, res) => {
         { userId: ObjectId(pdata.userLoginId), currencyId: pdata.currencyId },
         { $set: { optionsGameAmount: currentBalance, optionsHold: updateCurrentHoldAmt } },
         { session }
-      );      
+      );
 
       await session.commitTransaction();
       res.send({ status: true, data: updatedPrediction, message: "Successfully closed position" });
+    }else if(profitLoss === 0){      
+      const wagerAmt = parseFloat(findCloseBetData.predictionAmt);      
+      const feeAmt = parseFloat(findCloseBetData.feeAmount || 0);
+      const refundAmount = wagerAmt - feeAmt;
+      const newBalance = previousWalletGameAmt + refundAmount;
+      
+
+      let updatedPrediction = await GamePrediction.findByIdAndUpdate(pdata.predictionId,
+        {
+          $set: {
+            lossAmt: pdata.profitAndLoss,
+            predictionStatus: 1,
+            exitMarketPrice: pdata.exitPrice
+          }
+        },
+        { session, new: true }
+      );
+      let updateHoldAmt = previousHoldGameAmt > 0 ? previousHoldGameAmt - originalWager : previousHoldGameAmt;
+      let updateCurrentHoldAmt = parseFloat(updateHoldAmt).toFixed(2);
+      
+      const balanceEntry = new GamePreditionBalance({
+        userId: ObjectId(pdata.userLoginId),
+        currencyId: pdata.currencyId,
+        amount: newBalance,
+        difference: refundAmount,
+        oldBalance: previousWalletGameAmt,
+        holdAmount: findCloseBetData.actualpredictionAmt,
+        addedAmount: refundAmount,
+        type: 'Game lose',
+      });
+
+      await balanceEntry.save({ session });
+
+      await UserWallet.findOneAndUpdate({ userId: ObjectId(pdata.userLoginId), currencyId: pdata.currencyId },
+        {
+          $set:
+          {
+            gamePredictionAmount: newBalance,
+            gamePredictionHold: updateCurrentHoldAmt
+          }
+        }, { session });
+
+      await session.commitTransaction();
+      res.send({ status: true, data: updatedPrediction, message: "Successfully closed prediction" });
     } else {
       // Handle loss case
       const updatedPrediction = await OptionsGame.findByIdAndUpdate(
@@ -210,8 +257,7 @@ const closedBetFromUser = async (req, res) => {
       let updateHoldAmt = previousHoldGameAmt > 0 ? previousHoldGameAmt - originalWager : previousHoldGameAmt;
       let updateCurrentHoldAmt = parseFloat(updateHoldAmt).toFixed(2);
 
-      const profitLoss = parseFloat(pdata.profitAndLoss);
-      const absoluteProfitLoss = Math.abs(profitLoss);
+
 
       let newAmount = 0;
       if (updatedPrediction.marketprice === pdata.exitPrice) {
@@ -255,22 +301,22 @@ const getUserGameWalletBalance = async (data) => {
   try {
     let pdata = data;
     // console.log("pdata--",pdata);
-    if(pdata.userLoginId){
-      let userWalletBalance = await UserWallet.findOne({ userId: ObjectId(pdata.userLoginId), currencyId: ObjectId(pdata.currencyId) }, { optionsGameAmount: 1, userId : 1 });
-    // console.log("userWalletBalance---",userWalletBalance);
-      
+    if (pdata.userLoginId) {
+      let userWalletBalance = await UserWallet.findOne({ userId: ObjectId(pdata.userLoginId), currencyId: ObjectId(pdata.currencyId) }, { optionsGameAmount: 1, userId: 1 });
+      // console.log("userWalletBalance---",userWalletBalance);
+
       if (userWalletBalance) {
         return ({ status: true, data: userWalletBalance });
       } else {
         return ({ status: false, data: [] });
       }
-    }else{
+    } else {
       return ({ status: false, data: [] });
     }
-    
+
   } catch (error) {
     console.log("getUserGameWalletBalance error: ", error);
-    return({ status: false, message: "Something went wrong! Please try again someother time" });
+    return ({ status: false, message: "Something went wrong! Please try again someother time" });
   }
 }
 
@@ -308,13 +354,13 @@ const getAllPairs = async (req, res) => {
   try {
     let pdata = req.body;
     // console.log("pdata--",pdata);
-    const getCurrency = await Pairs.find({ toCurrencyId: ObjectId(pdata.currencyId), optionsStatus : 1 });
+    const getCurrency = await Pairs.find({ toCurrencyId: ObjectId(pdata.currencyId), optionsStatus: 1 });
     const PairsData = getCurrency.map(item => item.pair);
     // console.log("PairsData--",PairsData);
 
     const AggregatePairData = await Pairs.aggregate([
       {
-        $match: { toCurrencyId: ObjectId(pdata.currencyId), optionsStatus :1 }
+        $match: { toCurrencyId: ObjectId(pdata.currencyId), optionsStatus: 1 }
       },
       {
         $lookup: {
@@ -330,7 +376,7 @@ const getAllPairs = async (req, res) => {
           "result.image": 1,
         }
       }
-    ]);    
+    ]);
 
     if (getCurrency) {
       res.send({ status: true, data: PairsData, AggregatePairData: AggregatePairData })
@@ -353,40 +399,40 @@ const getTotalPairs = async (req, res) => {
 
     if (CurrencyId) {
 
-      activePairList = await queryHelper.findData(Pairs, { toCurrencyId: ObjectId(CurrencyId),optionsStatus : 1 }, { pair: 1, marketPrice: 1 }, {});
+      activePairList = await queryHelper.findData(Pairs, { toCurrencyId: ObjectId(CurrencyId), optionsStatus: 1 }, { pair: 1, marketPrice: 1 }, {});
 
       if (activePairList) {
-        return({ status: true, activePairList: activePairList })
+        return ({ status: true, activePairList: activePairList })
       } else {
-        return({ status: false, activePairList: [] })
+        return ({ status: false, activePairList: [] })
       }
     } else {
-      return({ status: false, activePairList: [] })
+      return ({ status: false, activePairList: [] })
     }
   } catch (error) {
     console.log("error: ", error);
-    return({ status: false, message: "Something went wrong! Please try again someother time" });
+    return ({ status: false, message: "Something went wrong! Please try again someother time" });
   }
 }
 
 const getSelectedPairs = async (data) => {
   try {
     const pair = data;
-    const getSelectedPair = await Pairs.find({ pair: pair, optionsStatus : 1 });
+    const getSelectedPair = await Pairs.find({ pair: pair, optionsStatus: 1 });
     // console.log("getSelectedPair--",getSelectedPair.length);
 
     if (getSelectedPair.length > 0) {
-      return({ status: true, data: getSelectedPair });
+      return ({ status: true, data: getSelectedPair });
     } else {
-      return({ status: false, data: [] });
+      return ({ status: false, data: [] });
     }
   } catch (error) {
     console.log("error: ", error);
-    return({ status: false, message: "Something went wrong! Please try again someother time" });
+    return ({ status: false, message: "Something went wrong! Please try again someother time" });
   }
 }
 
-const getTradeingData = async(req,res)=>{
+const getTradeingData = async (req, res) => {
   try {
     const getData = await TradingGameData.find({});
     if (getData) {
@@ -394,7 +440,7 @@ const getTradeingData = async(req,res)=>{
     } else {
       res.send({ status: false, data: [] })
     }
-    
+
   } catch (error) {
     console.log("error: ", error);
     res.send({ status: false, message: "Something went wrong! Please try again someother time" });

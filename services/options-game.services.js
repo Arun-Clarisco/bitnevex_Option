@@ -25,8 +25,8 @@ const calcProfitAndLoss = async (closeBetBody, currentMarketPrice) => {
 
     const newBustPrice = actualpredictionAmt * multiplier;
     const profitAmt = newBustPrice / marketprice;
-    const priceDifference = direction === 'Calls' 
-        ? currentMarketPrice - marketprice 
+    const priceDifference = direction === 'Calls'
+        ? currentMarketPrice - marketprice
         : marketprice - currentMarketPrice;
 
     const calcProfitPrice = profitAmt * priceDifference;
@@ -46,7 +46,7 @@ const calcProfitAndLoss = async (closeBetBody, currentMarketPrice) => {
     // Determine game type based on market price
     if (bustprice === currentMarketPrice) {
         return { status: true, data: resultData };
-    } 
+    }
     if (marketprice === currentMarketPrice) {
         return { status: true, data: resultData, type: "equaltoclose" };
     }
@@ -146,6 +146,7 @@ const winOrLossPriceUpdated = async (profitData, gameStatusStr, previousWalletGa
     const gameData = await queryHelper.findoneData(OptionsGame, { _id: predictionId }, {});
     if (gameData.status) {
         let predictionAmt = gameData.msg.predictionAmt;
+        let feeAmount = gameData.msg.feeAmount;
         let oldAmount = previousWalletGameAmt;
         let addedAmount = 0;
         let type = "";
@@ -167,7 +168,12 @@ const winOrLossPriceUpdated = async (profitData, gameStatusStr, previousWalletGa
         } else if (gameStatusStr == 'Closed') {
             holdAmount = holdAmount;
             type = "Game Closed";
+        } else if (gameStatusStr == 'AutoCloseZero') {
+            addedAmount = parseFloat(predictionAmt) - parseFloat(feeAmount);
+            holdAmount = holdAmount;
+            type = "GameAutoclosed";
         }
+
 
         let newAmount = oldAmount + addedAmount;
         let difference = newAmount - oldAmount;
@@ -185,7 +191,7 @@ const closeBetService = async (closeBetBody, currentMarketPrice, type) => {
 
         if (closeBetBody) {
 
-            const userWalletAmt = await queryHelper.findoneData(UserWallet,{userId: ObjectId(userId),currencyId: ObjectId(currencyId)},{ optionsGameAmount: 1, optionsHold: 1 });
+            const userWalletAmt = await queryHelper.findoneData(UserWallet, { userId: ObjectId(userId), currencyId: ObjectId(currencyId) }, { optionsGameAmount: 1, optionsHold: 1 });
             let previousWalletGameAmt = null
             let previousHoldAmt = null
 
@@ -203,6 +209,11 @@ const closeBetService = async (closeBetBody, currentMarketPrice, type) => {
                     const resData = await winOrLossPriceUpdated(getProfitData.data, gameStatusStr = 'Win', previousWalletGameAmt, previousHoldAmt);
                     if (resData && resData.userId) {
                         io.sockets.emit('betClosed', result);
+                    }
+                } else if (parseFloat(profitLoss) == 0) {
+                    const resData = await winOrLossPriceUpdated(getProfitData.data, gameStatusStr = 'AutoCloseZero', previousWalletGameAmt, previousHoldAmt);
+                    if (resData && resData.userId) {
+                        socket.sockets.emit('betClosed', result);
                     }
                 } else if (getProfitData.type == "equaltoclose") {
                     const resData = await winOrLossPriceUpdated(getProfitData.data, gameStatusStr = 'Closed', previousWalletGameAmt, previousHoldAmt);
