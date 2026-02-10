@@ -495,7 +495,8 @@ exports.OptionsGameBalanceUpdation = async (
       amount: roundValues(amount, 2),
       difference: roundValues(differ, 2),
       oldBalance: roundValues(balance, 2),
-      holdAmount: roundValues(holdAmount, 2),
+      // holdAmount: roundValues(holdAmount, 2),
+      holdAmount: holdAmount,
       addedAmount: roundValues(addedAmt, 2),
       lastId: lastId,
       type: type,
@@ -506,7 +507,7 @@ exports.OptionsGameBalanceUpdation = async (
     if (balanceUpdate) {
       if (previousHoldAmount > 0) {
         let updateHoldAmt = previousHoldAmount - predictionAmt
-        let updateCurrentHoldAmt = parseFloat(updateHoldAmt).toFixed(2);
+        let updateCurrentHoldAmt = parseFloat(updateHoldAmt);
 
         if (gameStatusStr === 'Win') {
           await UserWallet.findOneAndUpdate({ userId: Mongoose.mongo.ObjectId(userId), currencyId: Mongoose.mongo.ObjectId(currencyId) }, { $set: { optionsGameAmount: amount, optionsHold: updateCurrentHoldAmt } })
