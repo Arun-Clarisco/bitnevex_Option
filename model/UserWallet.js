@@ -57,9 +57,10 @@ const amounts = ["amount", "hold",
 	"alphaBotAmount", "alphaBotHold"
 ]
 walletSchema.pre("save", function (next) {
-	if (this.isModified("amount")) {
-		this.amount = Math.round(this.amount * BALANCE_FACTOR);
-		console.log(this.amount);
+	for (const key of amounts) {
+		if (this.isModified(key)) {
+			this[key] = Math.round(this[key] * BALANCE_FACTOR);
+		}
 	}
 	next();
 });

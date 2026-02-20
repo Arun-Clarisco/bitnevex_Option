@@ -57,7 +57,7 @@ const addNewPlacebit = async (req, res) => {
       await placeBet_new.save().then(async (result) => {
         let updatedWalletGameAmt = previousWalletGameAmt - betAmountWithFee;
         let addUpdateHoldAmt = previousHoldAmt + Number(pdata.wager);
-        let updatedHoldAmt = parseFloat(addUpdateHoldAmt).toFixed(2);
+        let updatedHoldAmt = parseFloat(addUpdateHoldAmt);
         if (previousWalletGameAmt >= betAmountWithFee) {
           await UserWallet.findOneAndUpdate({ userId: result.userId, currencyId: pdata.currencyId }, {
             $set: {
@@ -173,7 +173,7 @@ const closedBetFromUser = async (req, res) => {
 
       const currentBalance = previousWalletGameAmt + updatedWalletBalance;
       let updateHoldAmt = previousHoldGameAmt > 0 ? previousHoldGameAmt - originalWager : previousHoldGameAmt;
-      let updateCurrentHoldAmt = parseFloat(updateHoldAmt).toFixed(2);
+      let updateCurrentHoldAmt = parseFloat(updateHoldAmt);
 
       const balanceEntry = new OptionsGameBalance({
         userId: ObjectId(pdata.userLoginId),
@@ -214,7 +214,7 @@ const closedBetFromUser = async (req, res) => {
         { session, new: true }
       );
       let updateHoldAmt = previousHoldGameAmt > 0 ? previousHoldGameAmt - originalWager : previousHoldGameAmt;
-      let updateCurrentHoldAmt = parseFloat(updateHoldAmt).toFixed(2);
+      let updateCurrentHoldAmt = parseFloat(updateHoldAmt);
       
       const balanceEntry = new GamePreditionBalance({
         userId: ObjectId(pdata.userLoginId),
@@ -255,7 +255,7 @@ const closedBetFromUser = async (req, res) => {
       );
 
       let updateHoldAmt = previousHoldGameAmt > 0 ? previousHoldGameAmt - originalWager : previousHoldGameAmt;
-      let updateCurrentHoldAmt = parseFloat(updateHoldAmt).toFixed(2);
+      let updateCurrentHoldAmt = parseFloat(updateHoldAmt);
 
 
 
