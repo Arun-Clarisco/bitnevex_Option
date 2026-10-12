@@ -54,92 +54,6 @@ const calcProfitAndLoss = async (closeBetBody, currentMarketPrice) => {
     return { status: true, data: resultData };
 };
 
-
-// const calcProfitAndLoss = async (closeBetBody, currentMarketPrice) => {
-
-//     const { _id, userId, currencyId, bustprice, actualpredictionAmt, multiplier, marketprice, direction } = closeBetBody;
-//     let newBustPrice = null, profitAmt = null, calcProfitPrice = null, gameMarketPrice = marketprice, calProfitPrc = null;
-//     newBustPrice = actualpredictionAmt * multiplier;
-//     profitAmt = newBustPrice / gameMarketPrice; //userPrediction market price calc
-//     if (direction == 'Calls') {
-//         calcProfitPrice = profitAmt * (currentMarketPrice - gameMarketPrice);
-//         calProfitPrc = Number(calcProfitPrice.toFixed(2));
-//         if (bustprice == currentMarketPrice) {
-//             var buyData = {
-//                 predictionId: _id,
-//                 userDetail: userId,
-//                 profitLoss: calProfitPrc,
-//                 gameStatus: "autoClose",
-//                 directionDetail: direction,
-//                 currencyDetail: currencyId,
-//                 exitMrkPrice: currentMarketPrice
-//             }
-//             return { status: true, data: buyData }
-//         } if (marketprice == currentMarketPrice) {
-//             var buyData = {
-//                 predictionId: _id,
-//                 userDetail: userId,
-//                 profitLoss: calProfitPrc,
-//                 gameStatus: "autoClose",
-//                 directionDetail: direction,
-//                 currencyDetail: currencyId,
-//                 exitMrkPrice: currentMarketPrice
-//             }
-//             return { status: true, data: buyData, type: "equaltoclose" }
-//         }
-//         else {
-//             var buyData = {
-//                 predictionId: _id,
-//                 userDetail: userId,
-//                 profitLoss: calProfitPrc,
-//                 gameStatus: "autoClose",
-//                 directionDetail: direction,
-//                 currencyDetail: currencyId,
-//                 exitMrkPrice: currentMarketPrice
-//             }
-//             return { status: true, data: buyData }
-//         }
-//     } else if (direction == 'Puts') {
-//         calcProfitPrice = profitAmt * (gameMarketPrice - currentMarketPrice);
-//         calProfitPrc = Number(calcProfitPrice.toFixed(2));
-//         if (bustprice == currentMarketPrice) {
-//             var sellData = {
-//                 predictionId: _id,
-//                 userDetail: userId,
-//                 profitLoss: calProfitPrc,
-//                 gameStatus: "autoClose",
-//                 directionDetail: direction,
-//                 currencyDetail: currencyId,
-//                 exitMrkPrice: currentMarketPrice
-//             }
-//             return { status: true, data: sellData }
-//         } if (marketprice == currentMarketPrice) {
-//             var sellData = {
-//                 predictionId: _id,
-//                 userDetail: userId,
-//                 profitLoss: calProfitPrc,
-//                 gameStatus: "autoClose",
-//                 directionDetail: direction,
-//                 currencyDetail: currencyId,
-//                 exitMrkPrice: currentMarketPrice
-//             }
-//             return { status: true, data: sellData, type: "equaltoclose" }
-//         }
-//         else {
-//             var sellData = {
-//                 predictionId: _id,
-//                 userDetail: userId,
-//                 profitLoss: calProfitPrc,
-//                 gameStatus: "autoClose",
-//                 directionDetail: direction,
-//                 currencyDetail: currencyId,
-//                 exitMrkPrice: currentMarketPrice
-//             }
-//             return { status: true, data: sellData }
-//         }
-//     } else throw new Error(messageUtils.SOMETHING_WRONG);
-// };
-
 const winOrLossPriceUpdated = async (profitData, gameStatusStr, previousWalletGameAmt, previousHoldAmount) => {
 
     const { predictionId, userDetail, profitLoss, gameStatus, directionDetail, currencyDetail, exitMrkPrice } = profitData;
@@ -213,7 +127,7 @@ const closeBetService = async (closeBetBody, currentMarketPrice, type) => {
                 } else if (parseFloat(profitLoss) == 0) {
                     const resData = await winOrLossPriceUpdated(getProfitData.data, gameStatusStr = 'AutoCloseZero', previousWalletGameAmt, previousHoldAmt);
                     if (resData && resData.userId) {
-                        socket.sockets.emit('betClosed', result);
+                        io.sockets.emit('betClosed', result);
                     }
                 } else if (getProfitData.type == "equaltoclose") {
                     const resData = await winOrLossPriceUpdated(getProfitData.data, gameStatusStr = 'Closed', previousWalletGameAmt, previousHoldAmt);

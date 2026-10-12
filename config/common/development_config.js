@@ -1,29 +1,28 @@
-// Live 
+// Local 
+// const dbName = 'NVXO-EX-Local';
+// const dbUser = "arunprasad_db_user";
+// const dbPwd = "V1cug2XKrAVeS6Br";
+// const dbCluster = "cluster0.ai0h4ot.mongodb.net";
 
+// Live 
 const dbName = 'bitnevex';
 const dbUser = "BitnevexAdmin";
 const dbPwd = "DL9xPAvawflsiqyiFy";
 const dbCluster = "178.105.63.233:27017";
-
-// Local 
-// const dbName = 'CryptoExchange';
-// const dbUser = "sabarirajan_db_user";
-// const dbPwd = "aKnssXasVbnDqPOc";
-// const dbCluster = "bitnevex-local.ov3hqfy.mongodb.net";
 
 let envname = process.env.NODE_ENV;
 
 module.exports = {
 	env: envname,
 	dbName: dbName,
-	dbconnection: `mongodb+srv://${dbUser}:${dbPwd}@${dbCluster}/${dbName}?retryWrites=true&w=majority`,
+	dbconnection: `mongodb://${dbUser}:${dbPwd}@${dbCluster}/${dbName}?retryWrites=true&w=majority`,
 	caPath: "",
 	port: 3008,
-	passPhrase: 'T1Bt0Lx5jPu5L6AJ8523IAv0anRd03Ya',
+	passPhrase: '.S+X)Zmur=br;y+$2xjBfkJyTm1].v9-',
 	algorithm: 'aes-256-ctr',
 	iv: 'bLMjTTIuNUpWe345',
-	jwtTokenAdmin: 'ExAdMin',
-	jwtTokenCustomers: 'CEGsfH4cQKWqpIHdNoh9Bx9ZtXnwnpK9csd',
+	jwtTokenAdmin: '[pQ8v&wpx!Gn[f.2Ug',
+	jwtTokenCustomers: '2WHm-S!SMgnj3tA#3y',
 	smtpDetails: {
 		keys: {
 			host: 'mail.privateemail.com',
