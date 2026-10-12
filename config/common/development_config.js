@@ -1,29 +1,28 @@
-// Live 
-
-// const dbName = 'nexchange';
-// const dbUser = "Bitnevex";
-// const dbPwd = "lVakKs2k4C4FiaLJ";
-// const dbCluster = "cluster0.ibjcp.mongodb.net";
-
 // Local 
-const dbName = 'CryptoExchange';
-const dbUser = "sabarirajan_db_user";
-const dbPwd = "aKnssXasVbnDqPOc";
-const dbCluster = "bitnevex-local.ov3hqfy.mongodb.net";
+// const dbName = 'NVXO-EX-Local';
+// const dbUser = "arunprasad_db_user";
+// const dbPwd = "V1cug2XKrAVeS6Br";
+// const dbCluster = "cluster0.ai0h4ot.mongodb.net";
+
+// Live 
+const dbName = 'bitnevex';
+const dbUser = "BitnevexAdmin";
+const dbPwd = "DL9xPAvawflsiqyiFy";
+const dbCluster = "178.105.63.233:27017";
 
 let envname = process.env.NODE_ENV;
 
 module.exports = {
 	env: envname,
 	dbName: dbName,
-	dbconnection: `mongodb+srv://${dbUser}:${dbPwd}@${dbCluster}/${dbName}?retryWrites=true&w=majority`,
+	dbconnection: `mongodb://${dbUser}:${dbPwd}@${dbCluster}/${dbName}?retryWrites=true&w=majority`,
 	caPath: "",
-	port: 3006,
-	passPhrase: 'T1Bt0Lx5jPu5L6AJ8523IAv0anRd03Ya',
+	port: 3008,
+	passPhrase: '.S+X)Zmur=br;y+$2xjBfkJyTm1].v9-',
 	algorithm: 'aes-256-ctr',
 	iv: 'bLMjTTIuNUpWe345',
-	jwtTokenAdmin: 'ExAdMin',
-	jwtTokenCustomers: 'tTPeRBYEshnND5Sd4DEXa0BO9',
+	jwtTokenAdmin: '[pQ8v&wpx!Gn[f.2Ug',
+	jwtTokenCustomers: '2WHm-S!SMgnj3tA#3y',
 	smtpDetails: {
 		keys: {
 			host: 'mail.privateemail.com',
@@ -41,9 +40,11 @@ module.exports = {
 		// 
 	},
 	adminEnd: 'https://staging.adminpanel.bitnevex.com/',
-	frontEnd: 'https://staging.bitnevex.com/',
-	backEnd: "https://staging.options-api.bitnevex.com/api/",
-	galleryLink: "https://staging.options-api.bitnevex.com/",
+	// frontEnd: 'https://nvxo.io/',
+	// backEnd: "https://options-api.nvxo.io/api/",
+	frontEnd: 'http://localhost:3000/',
+	backEnd: "http://localhost:3008/",
+	galleryLink: "https://options-api.nvxo.io/",
 	siteName: 'BitNevex',
 	url: "localhost",
 
@@ -66,15 +67,15 @@ module.exports = {
 		optionsGameCron: "Enable"
 	},
 
-	REACT_APP_1_ENCRYPTION_KEY: "I6RXRiED7kNv3JQzph78Tg0oEbbfyA",
-	REACT_APP_2_ENCRYPTION_KEY: "FkXmMDz9Jf4aFDvzF6x2iEgPnyKKKn",
-	REACT_APP_3_ENCRYPTION_KEY: "Bu6B1nL7dwZntvl7cvwMZ32gER1343",
-	REACT_APP_4_ENCRYPTION_KEY: "Ine6BeyN7UyLUN5zEV10DbfQmZjetI",
-	REACT_APP_5_ENCRYPTION_KEY: "rYu42NPXfPS9gKEfWE4Mp5Xb5tstAG",
-	REACT_APP_6_ENCRYPTION_KEY: "sQewBADgiw8L6tb08xEXwNTOlGSveC",
-	REACT_APP_7_ENCRYPTION_KEY: "ShLq094FWcRA06CINbyMd1hTwQ129r",
-	REACT_APP_8_ENCRYPTION_KEY: "fHjThSIRCnpeq5EF1141o0NTki987J",
-	REACT_APP_9_ENCRYPTION_KEY: "5OjfuTasl3NZhlKZlXH6B0WrS5j9KH",
-	REACT_APP_10_ENCRYPTION_KEY: "aDPKsKln5HY0qMJJtPnvPoa39lcrc3"
+	REACT_APP_1_ENCRYPTION_KEY: "63rTB5BPxs7hG7cp90ocA1qBfFFp7A",
+	REACT_APP_2_ENCRYPTION_KEY: "z9L3fnQHWPv7uhurubpS1PyOLE3cJs",
+	REACT_APP_3_ENCRYPTION_KEY: "LFQXlSytfyR4QcWWevg3h8E8nFYpR9",
+	REACT_APP_4_ENCRYPTION_KEY: "dNmO47yN6PGMDdcr2Eh9MBr2INgzSo",
+	REACT_APP_5_ENCRYPTION_KEY: "t29M9ToRCq6qCZUoyaphHB9atDBlLs",
+	REACT_APP_6_ENCRYPTION_KEY: "5RV3SW3Fe4Nj2tlfRwgBJbYAaTdTRl",
+	REACT_APP_7_ENCRYPTION_KEY: "ID0ePgE1ysLKTUvvS9ZKl6UX2vYZEe",
+	REACT_APP_8_ENCRYPTION_KEY: "3gFbkEQdyveRqCn1axNXw5foyDkAwI",
+	REACT_APP_9_ENCRYPTION_KEY: "2Gzqn1SmSxBukKEVQgHlETohQohGd3",
+	REACT_APP_10_ENCRYPTION_KEY: "mKc8eUu0eKt3IiTHSYiICadzIwNHTK"
 
 }

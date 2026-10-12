@@ -39,7 +39,7 @@ cron.schedule("*/1 * * * * *", async () => {
         const GameTiming = await queryHelper.findData(TradingGameData, {}, {}, {});
         let setTime = null;
         if (GameTiming?.msg?.length > 0) {
-            setTime = GameTiming.msg[0].predictionTiming;
+            setTime = GameTiming.msg[0].optionsTiming;
         }
         // const setTime = GameTiming && GameTiming.msg[0].optionsTiming;
         let milliseconds = setTime * 60 * 1000;
