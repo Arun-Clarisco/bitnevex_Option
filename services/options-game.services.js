@@ -122,23 +122,23 @@ const closeBetService = async (closeBetBody, currentMarketPrice, type) => {
                 if (parseFloat(profitLoss) > 0) {
                     const resData = await winOrLossPriceUpdated(getProfitData.data, gameStatusStr = 'Win', previousWalletGameAmt, previousHoldAmt);
                     if (resData && resData.userId) {
-                        io.sockets.emit('betClosed', result);
+                         io.sockets.emit('betClosed', result);
                     }
                 } else if (parseFloat(profitLoss) == 0) {
                     const resData = await winOrLossPriceUpdated(getProfitData.data, gameStatusStr = 'AutoCloseZero', previousWalletGameAmt, previousHoldAmt);
                     if (resData && resData.userId) {
-                        io.sockets.emit('betClosed', result);
+                         io.sockets.emit('betClosed', result);
                     }
                 } else if (getProfitData.type == "equaltoclose") {
                     const resData = await winOrLossPriceUpdated(getProfitData.data, gameStatusStr = 'Closed', previousWalletGameAmt, previousHoldAmt);
                     if (resData && resData.userId) {
-                        io.sockets.emit('betClosed', result);
+                         io.sockets.emit('betClosed', result);
                     }
                 }
                 else {
                     const resData = await winOrLossPriceUpdated(getProfitData.data, gameStatusStr = 'Loss', previousWalletGameAmt, previousHoldAmt);
                     if (resData && resData.userId) {
-                        io.sockets.emit('betClosed', result)
+                         io.sockets.emit('betClosed', result)
                     }
                 }
             }
