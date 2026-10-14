@@ -23,17 +23,19 @@ module.exports = {
 	iv: 'bLMjTTIuNUpWe345',
 	jwtTokenAdmin: '[pQ8v&wpx!Gn[f.2Ug',
 	jwtTokenCustomers: '2WHm-S!SMgnj3tA#3y',
-	smtpDetails: {
-		keys: {
-			host: 'mail.privateemail.com',
-			port: 465,
-			secure: true,
-			auth: {
-				user: 'noreply@bitnevex.com',
-				pass: 'Clarisco@2024'
-			}
+	primarySmtp: {
+		smtpDetails: {
+			keys: {
+				host: 'smtp.zoho.in',
+				port: 587,
+				secure: true,
+				auth: {
+					user: 'Zoho-enczapikey',
+					pass: 'yA6KbHtT6Q/wl2JQQUQ80Jbf8Yw5//87gHu/5320e8ZyKNaziaFu1RM9ItCzJWfdiNCDsqkAY90QJIvov4sMLJBhYIdRK5TGTuv4P2uV48xh8ciEYNYvjJ6tArIXEqRMdhIsCSgzTv'
+				}
+			},
+			email: 'noreply@nvxo.io'
 		},
-		email: 'noreply@bitnevex.com'
 	},
 	serverType: 'http',
 	options: {
