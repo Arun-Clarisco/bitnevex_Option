@@ -27,19 +27,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 const allowedOrigins = new Set([
-  config.frontEnd && config.frontEnd.replace(/\/$/, ""),
-  config.Exchange_Frontend && config.Exchange_Frontend.replace(/\/$/, ""),
-  config.Tokenization_Frontend && config.Tokenization_Frontend.replace(/\/$/, ""),
-  "http://localhost:3000",
-  "http://localhost:3001",
   "https://nvxo.io",
   "https://www.nvxo.io",
-  "https://bitnevex.com",
-  "https://www.bitnevex.com",
   "https://7lxqmpsow7obo7evycdsp.nvxo.io",
-  config.Exchange_Frontend,
-  config.Tokenization_Frontend,
+  "http://localhost:3000",
+  "http://localhost:3001",
 ].filter(Boolean));
+
 app.use(cors({
   origin(origin, callback) {
     const localOrigin = origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
@@ -47,12 +41,11 @@ app.use(cors({
     return callback(new Error("Origin is not allowed by CORS"));
   },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "x-web-client-module"],
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('port', port);
-
-// app.use('/appapi', middlewareHelper.middlewareAppApi, appapiRouter);
-// app.use('/webapi', middlewareHelper.middlewareWebapi, webapiRouter);
 
 app.use('/api', middlewareHelper.middlewareApi, apiRouter);
 app.use('/webapi', middlewareHelper.middlewareWebapi, webapiRouter);
