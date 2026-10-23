@@ -26,6 +26,10 @@ const io = socketHelper.GetSocket();
  */
 const addNewPlacebit = async (req, res) => {
   try {
+    return res.send({
+      status: false,
+      message: "Order placement is currently disabled."
+    });
     const pdata = req.body;
     const userWalletGameAmt = await UserWallet.findOne({ userId: ObjectId(pdata.userLoginId), currencyId: ObjectId(pdata.currencyId) }, { optionsGameAmount: 1, optionsHold: 1 });
 
@@ -153,7 +157,7 @@ const closedBetFromUser = async (req, res) => {
     let originalWager = findCloseBetData.predictionAmt;
 
     const profitLoss = parseFloat(pdata.profitAndLoss);
-    
+
 
     if (profitLoss > 0) {
       // Handle win case
@@ -196,12 +200,12 @@ const closedBetFromUser = async (req, res) => {
 
       await session.commitTransaction();
       res.send({ status: true, data: updatedPrediction, message: "Successfully closed position" });
-    }else if(profitLoss === 0){      
-      const wagerAmt = parseFloat(findCloseBetData.predictionAmt);      
+    } else if (profitLoss === 0) {
+      const wagerAmt = parseFloat(findCloseBetData.predictionAmt);
       const feeAmt = parseFloat(findCloseBetData.feeAmount || 0);
       const refundAmount = wagerAmt - feeAmt;
       const newBalance = previousWalletGameAmt + refundAmount;
-      
+
 
       let updatedPrediction = await GamePrediction.findByIdAndUpdate(pdata.predictionId,
         {
@@ -215,7 +219,7 @@ const closedBetFromUser = async (req, res) => {
       );
       let updateHoldAmt = previousHoldGameAmt > 0 ? previousHoldGameAmt - originalWager : previousHoldGameAmt;
       let updateCurrentHoldAmt = parseFloat(updateHoldAmt);
-      
+
       const balanceEntry = new GamePreditionBalance({
         userId: ObjectId(pdata.userLoginId),
         currencyId: pdata.currencyId,
