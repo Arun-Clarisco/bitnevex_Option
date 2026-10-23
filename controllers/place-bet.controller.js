@@ -26,10 +26,7 @@ const io = socketHelper.GetSocket();
  */
 const addNewPlacebit = async (req, res) => {
   try {
-    return res.send({
-      status: false,
-      message: "Order placement is currently disabled."
-    });
+    
     const pdata = req.body;
     const userWalletGameAmt = await UserWallet.findOne({ userId: ObjectId(pdata.userLoginId), currencyId: ObjectId(pdata.currencyId) }, { optionsGameAmount: 1, optionsHold: 1 });
 
