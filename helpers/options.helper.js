@@ -190,7 +190,7 @@ mapTrade.prototype._userEmit = async function (userQuery, userId, pairId, curren
 
 exports.closePredictionBets = async function (reqBody) {
     try {
-        if (Config.sectionStatus && Config.sectionStatus.predictionGame != "Enable") {
+        if (Config.sectionStatus && Config.sectionStatus.optionsGameCron != "Enable") {
             _tradeMap._createResponseOptionsGame({
                 "status": false,
                 "message": "Trade disabled. Kindly contact admin!",
