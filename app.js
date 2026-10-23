@@ -22,10 +22,32 @@ let port = config.port;
 
 // view engine setup
 app.use(morgan("dev"));
-app.use(cors());
+// app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+const allowedOrigins = new Set([
+  config.frontEnd && config.frontEnd.replace(/\/$/, ""),
+  config.Exchange_Frontend && config.Exchange_Frontend.replace(/\/$/, ""),
+  config.Tokenization_Frontend && config.Tokenization_Frontend.replace(/\/$/, ""),
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://nvxo.io",
+  "https://www.nvxo.io",
+  "https://bitnevex.com",
+  "https://www.bitnevex.com",
+  "https://7lxqmpsow7obo7evycdsp.nvxo.io",
+  config.Exchange_Frontend,
+  config.Tokenization_Frontend,
+].filter(Boolean));
+app.use(cors({
+  origin(origin, callback) {
+    const localOrigin = origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+    if (!origin || localOrigin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error("Origin is not allowed by CORS"));
+  },
+  credentials: true,
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('port', port);
 

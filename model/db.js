@@ -60,5 +60,6 @@ require("./Competion");
 require('./GamePredictionPairs');
 require('./Admin');
 require('./tradingTimeSettings');
+require('./AccessToken')
 
 

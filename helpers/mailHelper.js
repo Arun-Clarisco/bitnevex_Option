@@ -1,14 +1,18 @@
-const config = require("../config/config");
+
+let config = require("../config/config");
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
-const smtpdetails = config.smtpDetails.keys;
-const transporter = nodemailer.createTransport(smtpdetails);
+const smtpdetails = config.primarySmtp.smtpDetails.keys;
 const query_helper = require('../helpers/query.helper');
 const siteSettings = mongoose.model("SiteSettings");
+const sgMail = require('@sendgrid/mail');
+const primaryConfig = config.primarySmtp;
+const transporter = nodemailer.createTransport(smtpdetails);
 const { SendMailClient } = require("zeptomail");
 const url = "api.zeptomail.eu/v1.1/email";
 const token = "Zoho-enczapikey yA6KbHtT6Q/wl2JQQUQ80Jbf8Yw5//87gHu/5320e8ZyKNaziaFu1RM9ItCzJWfdiNCDsqkAY90QJIvov4sMLJBhYIdRK5TGTuv4P2uV48xh8ciEYNYvjJ6tArIXEqRMdhIsCSgzTvFt";
 let client = new SendMailClient({ url, token });
+
 exports.sendMail = async (values, callback) => {
 	try {
 		// return callback(true)
@@ -17,9 +21,6 @@ exports.sendMail = async (values, callback) => {
 		console.log({ mailservice: error.error.details });
 	};
 };
-
-// const SG_API_KEY = config.SG_API_KEY;
-// sgMail.setApiKey(SG_API_KEY);
 
 async function mailService(values, smtpConfig, callback) {
 	let admin = await query_helper.findoneData(siteSettings, {}, {});

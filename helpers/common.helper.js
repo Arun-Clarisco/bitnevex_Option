@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const Mongoose = require("mongoose");
+const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const ipInfo = require("ipinfo");
 const fs = require('fs');
@@ -9,12 +9,14 @@ const config = require("../config/config");
 const { decryptRequestPayload } = require("./cryptoJs.helper");
 const CryptoJS = require("crypto-js");
 //** db collection imported */
-const UserWallet = Mongoose.model("UserWallet");
-const Users = Mongoose.model("Users");
-const Notification = Mongoose.model("Notification");
-const OptionsGameBalance = Mongoose.model("OptionsGameBalanceUpdation");
-const sitesetting = Mongoose.model("SiteSettings");
-const Admin = Mongoose.model("Admin");
+const UserWallet = mongoose.model("UserWallet");
+const Users = mongoose.model("Users");
+const Notification = mongoose.model("Notification");
+const OptionsGameBalance = mongoose.model("OptionsGameBalanceUpdation");
+const sitesetting = mongoose.model("SiteSettings");
+const Admin = mongoose.model("Admin");
+const AccessToken = mongoose.model("AccessToken");
+
 let jwtTokenAdmin = config.jwtTokenAdmin;
 let siteDeploy = 0;
 let jwtTokenCustomers = config.jwtTokenCustomers;
@@ -107,8 +109,8 @@ exports.getbalance = async function (userId, currencyId) {
   let resdata1 = await queryHelper.findoneData(
     UserWallet,
     {
-      userId: Mongoose.mongo.ObjectId(userId),
-      currencyId: Mongoose.mongo.ObjectId(currencyId),
+      userId: mongoose.mongo.ObjectId(userId),
+      currencyId: mongoose.mongo.ObjectId(currencyId),
     },
     {}
   );
@@ -116,8 +118,8 @@ exports.getbalance = async function (userId, currencyId) {
     return resdata1.msg;
   } else {
     const createWallet = {
-      userId: Mongoose.mongo.ObjectId(userId),
-      currencyId: Mongoose.mongo.ObjectId(currencyId),
+      userId: mongoose.mongo.ObjectId(userId),
+      currencyId: mongoose.mongo.ObjectId(currencyId),
       amount: 0,
       hold: 0,
       p2pAmount: 0,
@@ -143,7 +145,7 @@ const generateHash = (payloadData) => {
 };
 
 exports.encMiddleWare = async (req, res, next) => {
-  try {    
+  try {
     if (Object.keys(req.body).length === 0) {
       return next();
     };
@@ -190,7 +192,7 @@ exports.tokenMiddlewareAdmin = async function (request, res, next) {
     }
     const userData = await queryHelper.findoneData(
       Admin,
-      { _id: Mongoose.Types.ObjectId(payload.subject), status: 1 },
+      { _id: mongoose.Types.ObjectId(payload.subject), status: 1 },
       {}
     );
     if (userData.status) {
@@ -204,48 +206,110 @@ exports.tokenMiddlewareAdmin = async function (request, res, next) {
 
 exports.tokenMiddlewareCustomers = async (request, res, next) => {
   try {
-    if (!request.headers.authorization) {
+    const token = request.cookies && request.cookies.userToken;
+    if (!token) {
       return res.status(401).json({ status: false, message: "unauthorized" });
     }
-    let token = request.headers.authorization.split(" ")[1];
-    if (token === "null") {
+    if (token == "null") {
       return res.status(401).json({ status: false, message: "unauthorized" });
     } else {
       let payload = jwt.verify(token, jwtTokenCustomers);
       if (!payload) {
         return res.status(401).json({ status: false, message: "unauthorized" });
-      }
-      const userData = await queryHelper.findoneData(
-        Users,
-        {
-          _id: Mongoose.Types.ObjectId(payload.subject),
-          status: 1,
-          securityKey: payload.securityKey,
-        },
-        {}
-      );
-      if (userData.status) {
-        if (userData.msg.status === 0) {
+      } else {
+        const isLoginData = await queryHelper.findoneData(
+          AccessToken,
+          { userId: mongoose.Types.ObjectId(payload.subject), token: token },
+          {}
+        );
+        if (isLoginData.status) {
+          const userData = await queryHelper.findoneData(
+            Users,
+            {
+              _id: mongoose.Types.ObjectId(payload.subject),
+              status: 1,
+              securityKey: payload.securityKey,
+            },
+            {}
+          );
+          if (userData.status) {
+            if (userData.msg.status === 0) {
+              return res.status(401).json({
+                status: false,
+                message: "Your account is disabled by admin",
+              });
+            }
+            let activeUser = await queryHelper.findoneData(AccessToken, { userId: userData.msg._id });
+            activeUser = activeUser.msg;
+            if (activeUser.token != token) {
+              return res.status(401).json({ status: false, message: "unauthorized User" });
+            }
+            request.reqUserData = userData.msg;
+            request.userId = payload.subject;
+            request.securityKey = payload.securityKey;
+            next();
+          } else {
+            return res
+              .status(401)
+              .json({ status: false, message: "unauthorized" });
+          }
+        } else {
           return res
             .status(401)
-            .json({
-              status: false,
-              message: "Your account is disabled by admin",
-            });
+            .json({ status: false, message: "unauthorized" });
         }
-        request.reqUserData = userData.msg;
-        request.userId = payload.subject;
-        request.securityKey = payload.securityKey;
-        next();
-      } else {
-        return res.status(401).json({ status: false, message: "unauthorized" });
       }
     }
   } catch (e) {
-    console.log("tokenMiddlewareCustomers", e, request.headers.authorization);
+    console.log("tokenMiddlewareCustomers", e);
     return res.status(401).json({ status: false, message: "unauthorized" });
   }
 };
+
+// exports.tokenMiddlewareCustomers = async (request, res, next) => {
+//   try {
+//     if (!request.headers.authorization) {
+//       return res.status(401).json({ status: false, message: "unauthorized" });
+//     }
+//     let token = request.headers.authorization.split(" ")[1];
+//     if (token === "null") {
+//       return res.status(401).json({ status: false, message: "unauthorized" });
+//     } else {
+//       let payload = jwt.verify(token, jwtTokenCustomers);
+//       if (!payload) {
+//         return res.status(401).json({ status: false, message: "unauthorized" });
+//       }
+//       const userData = await queryHelper.findoneData(
+//         Users,
+//         {
+//           _id: mongoose.Types.ObjectId(payload.subject),
+//           status: 1,
+//           securityKey: payload.securityKey,
+//         },
+//         {}
+//       );
+//       if (userData.status) {
+//         if (userData.msg.status === 0) {
+//           return res
+//             .status(401)
+//             .json({
+//               status: false,
+//               message: "Your account is disabled by admin",
+//             });
+//         }
+//         request.reqUserData = userData.msg;
+//         request.userId = payload.subject;
+//         request.securityKey = payload.securityKey;
+//         next();
+//       } else {
+//         return res.status(401).json({ status: false, message: "unauthorized" });
+//       }
+//     }
+//   } catch (e) {
+//     console.log("tokenMiddlewareCustomers", e, request.headers.authorization);
+//     return res.status(401).json({ status: false, message: "unauthorized" });
+//   }
+// };
 
 exports.userNotify = async function (data = {}) {
 };
@@ -259,8 +323,8 @@ exports.updateUserBalance = async function (
   extdata = {}
 ) {
   const userWalletFindData = {
-    userId: Mongoose.mongo.ObjectId(userId),
-    currencyId: Mongoose.mongo.ObjectId(currencyId),
+    userId: mongoose.mongo.ObjectId(userId),
+    currencyId: mongoose.mongo.ObjectId(currencyId),
   }
   const wallet_data = await queryHelper.findoneData(
     UserWallet,
@@ -278,8 +342,8 @@ exports.updateUserBalance = async function (
     }
   } else {
     let createwallet = {
-      userId: Mongoose.mongo.ObjectId(userId),
-      currencyId: Mongoose.mongo.ObjectId(currencyId),
+      userId: mongoose.mongo.ObjectId(userId),
+      currencyId: mongoose.mongo.ObjectId(currencyId),
       p2pAmount: 0,
       p2pHold: 0,
       perpetualAmount: 0,
@@ -292,8 +356,8 @@ exports.updateUserBalance = async function (
   }
 
   const updations = {
-    userId: Mongoose.mongo.ObjectId(userId),
-    currencyId: Mongoose.mongo.ObjectId(currencyId),
+    userId: mongoose.mongo.ObjectId(userId),
+    currencyId: mongoose.mongo.ObjectId(currencyId),
     amount: roundValues(amount, 8),
     difference: roundValues(amount - balance, 8),
     oldBalance: roundValues(balance, 8),
@@ -331,19 +395,6 @@ exports.updateUserBalance = async function (
     updBalData
   );
 
-  // if (balance < 0) {
-  //   let email_data = await query_helper.findoneData(emailTemplate, { hint: 'negative-hold-issue' }, {})
-  //   if (email_data.status) {
-  //     const userResult = await query_helper.findoneData(Users, { "_id": Mongoose.Types.ObjectId(userId) }, {});
-  //     if (userResult.status) {
-  //       email_data = email_data.msg;
-  //       let emailtemplate = email_data.content.replace(/###USER###/g, userResult.msg.username).replace(/###BALANCE###/g, balance);
-  //       mail_helper.sendMail({ subject: email_data.subject, to: 'test@yopmail.com', html: emailtemplate }, (aftermail) => {
-  //       })
-  //     }
-  //   }
-  // }
-
   if (balanceId && balanceId.msg && balanceId.msg._id) {
     return balanceId.msg._id;
     // return updations;
@@ -363,8 +414,8 @@ exports.updateOptionsgameWalletAmount = async function (
   const wallet_data = await queryHelper.findoneData(
     UserWallet,
     {
-      userId: Mongoose.mongo.ObjectId(userId),
-      currencyId: Mongoose.mongo.ObjectId(currencyId),
+      userId: mongoose.mongo.ObjectId(userId),
+      currencyId: mongoose.mongo.ObjectId(currencyId),
     },
     {}
   );
@@ -373,8 +424,8 @@ exports.updateOptionsgameWalletAmount = async function (
     balance = wallet_data.msg.optionsGameAmount;
   }
   const updations = {
-    userId: Mongoose.mongo.ObjectId(userId),
-    currencyId: Mongoose.mongo.ObjectId(currencyId),
+    userId: mongoose.mongo.ObjectId(userId),
+    currencyId: mongoose.mongo.ObjectId(currencyId),
     amount: roundValues(amount, 8),
     difference: roundValues(amount - balance, 8),
     oldBalance: roundValues(balance, 8),
@@ -386,8 +437,8 @@ exports.updateOptionsgameWalletAmount = async function (
     UserWallet,
     "one",
     {
-      userId: Mongoose.mongo.ObjectId(userId),
-      currencyId: Mongoose.mongo.ObjectId(currencyId),
+      userId: mongoose.mongo.ObjectId(userId),
+      currencyId: mongoose.mongo.ObjectId(currencyId),
     },
     { optionsGameAmount: +roundValues(+amount, 8) }
   );
@@ -490,8 +541,8 @@ exports.OptionsGameBalanceUpdation = async (
     let balanceUpdation;
     //** Game-prediction-balance-updation db will be created here */
     balanceUpdation = {
-      userId: Mongoose.mongo.ObjectId(userId),
-      currencyId: Mongoose.mongo.ObjectId(currencyId),
+      userId: mongoose.mongo.ObjectId(userId),
+      currencyId: mongoose.mongo.ObjectId(currencyId),
       amount: roundValues(amount, 2),
       difference: roundValues(differ, 2),
       oldBalance: roundValues(balance, 2),
@@ -501,7 +552,7 @@ exports.OptionsGameBalanceUpdation = async (
       lastId: lastId,
       type: type,
     };
-    
+
     //** Game prediction updation create */
     const balanceUpdate = await OptionsGameBalance.create(balanceUpdation);
     if (balanceUpdate) {
@@ -510,9 +561,9 @@ exports.OptionsGameBalanceUpdation = async (
         let updateCurrentHoldAmt = parseFloat(updateHoldAmt);
 
         if (gameStatusStr === 'Win') {
-          await UserWallet.findOneAndUpdate({ userId: Mongoose.mongo.ObjectId(userId), currencyId: Mongoose.mongo.ObjectId(currencyId) }, { $set: { optionsGameAmount: amount, optionsHold: updateCurrentHoldAmt } })
+          await UserWallet.findOneAndUpdate({ userId: mongoose.mongo.ObjectId(userId), currencyId: mongoose.mongo.ObjectId(currencyId) }, { $set: { optionsGameAmount: amount, optionsHold: updateCurrentHoldAmt } })
         } else {
-          await UserWallet.findOneAndUpdate({ userId: Mongoose.mongo.ObjectId(userId), currencyId: Mongoose.mongo.ObjectId(currencyId) }, { $set: { optionsGameAmount: amount, optionsHold: updateCurrentHoldAmt } })
+          await UserWallet.findOneAndUpdate({ userId: mongoose.mongo.ObjectId(userId), currencyId: mongoose.mongo.ObjectId(currencyId) }, { $set: { optionsGameAmount: amount, optionsHold: updateCurrentHoldAmt } })
         }
       }
     }
