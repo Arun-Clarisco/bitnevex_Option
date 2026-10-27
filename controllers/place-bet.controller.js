@@ -313,7 +313,7 @@ const addNewPlacebit = async (req, res) => {
         marketprice: marketPrice,
         bustprice: bustprice,
         direction: pdata.direction,
-        feeAmount: pdata.betFeeAmt,
+        feeAmount: betFeeAmt,
         competionId: pdata.competionId,
         pairName: pdata.pair
       });
@@ -493,9 +493,6 @@ const closedBetFromUser = async (req, res) => {
     let previousWalletGameAmt = userWalletGameAmt.optionsGameAmount;
     let previousHoldGameAmt = userWalletGameAmt.optionsHold;
     let originalWager = findCloseBetData.predictionAmt;
-
-
-
 
     if (profitLoss > 0) {
       // Handle win case
@@ -705,12 +702,14 @@ const getCompetion = async (req, res) => {
 const getAllPairs = async (req, res) => {
   try {
     let pdata = req.body;
+
     if (!ObjectId.isValid(pdata.currencyId)) {
       return res.send({
         status: false,
         message: "Invalid Currency ID"
       });
     }
+    
     const getCurrency = await Pairs.find({ toCurrencyId: ObjectId(pdata.currencyId), optionsStatus: 1 });
     const PairsData = getCurrency.map(item => item.pair);
 
