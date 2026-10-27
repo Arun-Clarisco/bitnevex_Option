@@ -6,14 +6,37 @@ const OptionsGame = Mongoose.model("OptionsGame");
 const Pairs = Mongoose.model("Pairs");
 const Currency = Mongoose.model("CurrencySymbol");
 const queryHelper = require("../helpers/query.helper");
-const { successResponse, errorResponse } = require("../helpers/response");
 
 const getOptionsHistory = async (req, res) => {
 
   try {
     let getdata = req.body.formvalue;
-    // console.log("getdata--",getdata);
-    
+    console.log("getdata==", getdata);
+
+    if (!getdata || typeof getdata !== "object") {
+      return res.send({
+        status: false,
+        message: "Invalid form data"
+      });
+    }
+
+    let limit = req.body.limit ? parseInt(req.body.limit) : 10;
+    let offset = req.body.offset ? parseInt(req.body.offset) : 0
+
+    if (isNaN(limit) || limit <= 0) {
+      return res.send({
+        status: false,
+        message: "Invalid limit"
+      });
+    }
+
+    if (isNaN(offset) || offset < 0) {
+      return res.send({
+        status: false,
+        message: "Invalid offset"
+      });
+    }
+
     let matchQ = [{ $ne: '' }, { $regex: '', $options: 'i' }, { $regex: '', $options: 'i' }, { $regex: '', $options: 'i' }, { $regex: '', $options: 'i' }];
     matchQ.predictionStatus = 1;
     if (getdata.fromdate != '' && getdata.todate != '') {
@@ -38,8 +61,7 @@ const getOptionsHistory = async (req, res) => {
     if (getdata.pairs != '') {
       matchQ[3] = { $regex: getdata.pairs, $options: 'i' };
     }
-    let limit = req.body.limit ? parseInt(req.body.limit) : 10;
-    let offset = req.body.offset ? parseInt(req.body.offset) : 0
+
 
     const getHistoryData = await OptionsGame.aggregate([
       {
@@ -73,9 +95,6 @@ const getOptionsHistory = async (req, res) => {
       { $limit: limit },
     ]);
 
-    // console.log("getHistoryData==",getHistoryData);
-    
-
     const getHistoryDataLength = await OptionsGame.aggregate([
       {
         $match: {
@@ -106,9 +125,9 @@ const getOptionsHistory = async (req, res) => {
     ]);
 
     if (getHistoryData) {
-      res.send({ status: true, data: getHistoryData , total : getHistoryDataLength.length})
+      res.send({ status: true, data: getHistoryData, total: getHistoryDataLength.length })
     } else {
-      res.send({ status: false, data: [], total : 0 })
+      res.send({ status: false, data: [], total: 0 })
     }
   } catch (error) {
     console.log("error: ", error);
@@ -117,14 +136,14 @@ const getOptionsHistory = async (req, res) => {
 }
 
 const getPairs = async (req, res) => {
-  
+
   try {
     const CurrencySymbols = await queryHelper.findoneData(Currency, { currencySymbol: "USDT" });
-    
+
     const CurrencyId = CurrencySymbols.msg._id;
 
-    const activePairList = await queryHelper.findData(Pairs, { toCurrencyId: ObjectId(CurrencyId), optionsStatus:1 }, {pair: 1 }, {});
-    
+    const activePairList = await queryHelper.findData(Pairs, { toCurrencyId: ObjectId(CurrencyId), optionsStatus: 1 }, { pair: 1 }, {});
+
     if (activePairList && activePairList.msg) {
       const activePairs = activePairList && activePairList.msg;
       res.send({ status: true, data: activePairs });

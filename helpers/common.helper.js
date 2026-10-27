@@ -1,7 +1,5 @@
-const crypto = require("crypto");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const ipInfo = require("ipinfo");
 const fs = require('fs');
 const path = require('path');
 const queryHelper = require("./query.helper");
@@ -30,45 +28,57 @@ function _intervalFunc() {
 }
 
 exports.setUsdtRateChange = async function () {
-  let sitesettingdata = await queryHelper.findoneData(sitesetting, {}, {});
+  try {
+    let sitesettingdata = await queryHelper.findoneData(sitesetting, {}, {});
 
-  let changeValue =
-    sitesettingdata.status && sitesettingdata.msg.tradeUSDTValue > 0
-      ? sitesettingdata.msg.tradeUSDTValue
-      : 0;
-  let usdtType =
-    sitesettingdata.status && sitesettingdata.msg.tradeUSDTType == "+"
-      ? "+"
-      : "-";
-  let usdtChange =
-    changeValue > 0
-      ? usdtType == "+"
-        ? 80 + changeValue
-        : 80 - changeValue
-      : 0;
-  let changePer = changeValue > 0 ? usdtChange / 80 : 0;
-  usdtRate = { changePer, usdtType, changeValue };
-  return usdtRate;
+    let changeValue =
+      sitesettingdata.status && sitesettingdata.msg.tradeUSDTValue > 0
+        ? sitesettingdata.msg.tradeUSDTValue
+        : 0;
+    let usdtType =
+      sitesettingdata.status && sitesettingdata.msg.tradeUSDTType == "+"
+        ? "+"
+        : "-";
+    let usdtChange =
+      changeValue > 0
+        ? usdtType == "+"
+          ? 80 + changeValue
+          : 80 - changeValue
+        : 0;
+    let changePer = changeValue > 0 ? usdtChange / 80 : 0;
+    usdtRate = { changePer, usdtType, changeValue };
+    return usdtRate;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
+  }
+
 };
 exports.getUsdtRateChange = () => {
   return usdtRate;
 };
 exports.setUsdtRate = (usdRate) => {
-  if (usdtRateCall == 0) {
-    usdtRateCall = 1;
-    setTimeout(_intervalFunc, 300000);
-    if (usdtRate.changeValue > 0) {
-      let usdtChange =
-        usdtRate.changeValue > 0
-          ? usdtRate.usdtType == "+"
-            ? usdRate + usdtRate.changeValue
-            : usdRate - usdtRate.changeValue
-          : 0;
-      let changePer = usdtRate.changeValue > 0 ? usdtChange / usdRate : 0;
-      usdtRate.changePer = changePer;
+  try {
+    if (usdtRateCall == 0) {
+      usdtRateCall = 1;
+      setTimeout(_intervalFunc, 300000);
+      if (usdtRate.changeValue > 0) {
+        let usdtChange =
+          usdtRate.changeValue > 0
+            ? usdtRate.usdtType == "+"
+              ? usdRate + usdtRate.changeValue
+              : usdRate - usdtRate.changeValue
+            : 0;
+        let changePer = usdtRate.changeValue > 0 ? usdtChange / usdRate : 0;
+        usdtRate.changePer = changePer;
+      }
     }
+    return usdtRate;
+  } catch (error) {
+    console.log("error", error);
+    throw error;
   }
-  return usdtRate;
+
 };
 
 exports.getSiteDeploy = () => {
@@ -79,57 +89,69 @@ exports.userNotification = async function (userId, content, content1) {
   return true;
   const userlogdata = { userId: userId, content: content, content1: content1 };
   userAppPushNotification(userId, content1);
-  await query_helper.insertData(Notification, userlogdata);
+  await queryHelper.insertData(Notification, userlogdata);
   return true;
 };
 
 exports.activity = function (req) {
-  let ua = req.headers["user-agent"];
-  ua = ua.toLowerCase();
-  let browser = "";
-  if (/firefox/i.test(ua)) browser = "Firefox";
-  else if (/chrome/i.test(ua)) browser = "Chrome";
-  else if (/safari/i.test(ua)) browser = "Safari";
-  else if (/msie/i.test(ua)) browser = "msie";
-  else browser = "unknown";
+  try {
+    let ua = req?.headers?.["user-agent"] || "";
+    ua = ua.toLowerCase();
+    let browser = "";
+    if (/firefox/i.test(ua)) browser = "Firefox";
+    else if (/chrome/i.test(ua)) browser = "Chrome";
+    else if (/safari/i.test(ua)) browser = "Safari";
+    else if (/msie/i.test(ua)) browser = "msie";
+    else browser = "unknown";
 
-  let ip = "";
-  if (req != "") {
-    ip =
-      typeof req.headers["x-forwarded-for"] == "string"
-        ? req.headers["x-forwarded-for"]
-        : typeof req.headers["cf-connecting-ip"] == "string"
-          ? req.headers["cf-connecting-ip"]
-          : "";
+    let ip = "";
+    if (req != "") {
+      ip =
+        typeof req.headers["x-forwarded-for"] == "string"
+          ? req.headers["x-forwarded-for"]
+          : typeof req.headers["cf-connecting-ip"] == "string"
+            ? req.headers["cf-connecting-ip"]
+            : "";
+    }
+    return { ip: ip, browser: browser };
+  } catch (error) {
+    console.error("getbalance error:", error);
+    throw error;
   }
-  return { ip: ip, browser: browser };
+
 };
 
 exports.getbalance = async function (userId, currencyId) {
-  let resdata1 = await queryHelper.findoneData(
-    UserWallet,
-    {
-      userId: mongoose.mongo.ObjectId(userId),
-      currencyId: mongoose.mongo.ObjectId(currencyId),
-    },
-    {}
-  );
-  if (resdata1.status) {
-    return resdata1.msg;
-  } else {
-    const createWallet = {
-      userId: mongoose.mongo.ObjectId(userId),
-      currencyId: mongoose.mongo.ObjectId(currencyId),
-      amount: 0,
-      hold: 0,
-      p2pAmount: 0,
-      p2pHold: 0,
-      perpetualAmount: 0,
-      perpetualHold: 0,
-    };
-    await queryHelper.insertData(UserWallet, createWallet);
-    return createWallet;
+  try {
+    let resdata1 = await queryHelper.findoneData(
+      UserWallet,
+      {
+        userId: mongoose.mongo.ObjectId(userId),
+        currencyId: mongoose.mongo.ObjectId(currencyId),
+      },
+      {}
+    );
+    if (resdata1.status) {
+      return resdata1.msg;
+    } else {
+      const createWallet = {
+        userId: mongoose.mongo.ObjectId(userId),
+        currencyId: mongoose.mongo.ObjectId(currencyId),
+        amount: 0,
+        hold: 0,
+        p2pAmount: 0,
+        p2pHold: 0,
+        perpetualAmount: 0,
+        perpetualHold: 0,
+      };
+      await queryHelper.insertData(UserWallet, createWallet);
+      return createWallet;
+    }
+  } catch (error) {
+    console.error("getbalance error:", error);
+    throw error;
   }
+
 };
 
 const generateHash = (payloadData) => {
@@ -179,28 +201,32 @@ exports.encMiddleWare = async (req, res, next) => {
 
 
 exports.tokenMiddlewareAdmin = async function (request, res, next) {
-  if (!request.headers.authorization) {
-    return res.status(401).send("unauthorized");
-  }
-  let token = request.headers.authorization.split(" ")[1];
-  if (token === "null") {
-    return res.status(401).send("unauthorized");
-  } else {
-    let payload = jwt.verify(token, jwtTokenAdmin);
-    if (!payload) {
+  try {
+    if (!request.headers.authorization) {
       return res.status(401).send("unauthorized");
     }
-    const userData = await queryHelper.findoneData(
-      Admin,
-      { _id: mongoose.Types.ObjectId(payload.subject), status: 1 },
-      {}
-    );
-    if (userData.status) {
-      request.userId = payload.subject;
-      next();
+    let token = request.headers.authorization.split(" ")[1];
+    if (token === "null") {
+      return res.status(401).send("unauthorized");
     } else {
-      return res.status(401).send("unauthorized");
+      let payload = jwt.verify(token, jwtTokenAdmin);
+      if (!payload) {
+        return res.status(401).send("unauthorized");
+      }
+      const userData = await queryHelper.findoneData(
+        Admin,
+        { _id: mongoose.Types.ObjectId(payload.subject), status: 1 },
+        {}
+      );
+      if (userData.status) {
+        request.userId = payload.subject;
+        next();
+      } else {
+        return res.status(401).send("unauthorized");
+      }
     }
+  } catch (error) {
+    return res.status(403).json({ status: false, message: "unauthorized" });
   }
 };
 
@@ -266,54 +292,6 @@ exports.tokenMiddlewareCustomers = async (request, res, next) => {
   }
 };
 
-// exports.tokenMiddlewareCustomers = async (request, res, next) => {
-//   try {
-//     if (!request.headers.authorization) {
-//       return res.status(401).json({ status: false, message: "unauthorized" });
-//     }
-//     let token = request.headers.authorization.split(" ")[1];
-//     if (token === "null") {
-//       return res.status(401).json({ status: false, message: "unauthorized" });
-//     } else {
-//       let payload = jwt.verify(token, jwtTokenCustomers);
-//       if (!payload) {
-//         return res.status(401).json({ status: false, message: "unauthorized" });
-//       }
-//       const userData = await queryHelper.findoneData(
-//         Users,
-//         {
-//           _id: mongoose.Types.ObjectId(payload.subject),
-//           status: 1,
-//           securityKey: payload.securityKey,
-//         },
-//         {}
-//       );
-//       if (userData.status) {
-//         if (userData.msg.status === 0) {
-//           return res
-//             .status(401)
-//             .json({
-//               status: false,
-//               message: "Your account is disabled by admin",
-//             });
-//         }
-//         request.reqUserData = userData.msg;
-//         request.userId = payload.subject;
-//         request.securityKey = payload.securityKey;
-//         next();
-//       } else {
-//         return res.status(401).json({ status: false, message: "unauthorized" });
-//       }
-//     }
-//   } catch (e) {
-//     console.log("tokenMiddlewareCustomers", e, request.headers.authorization);
-//     return res.status(401).json({ status: false, message: "unauthorized" });
-//   }
-// };
-
-exports.userNotify = async function (data = {}) {
-};
-
 exports.updateUserBalance = async function (
   userId,
   currencyId,
@@ -322,86 +300,91 @@ exports.updateUserBalance = async function (
   type,
   extdata = {}
 ) {
-  const userWalletFindData = {
-    userId: mongoose.mongo.ObjectId(userId),
-    currencyId: mongoose.mongo.ObjectId(currencyId),
-  }
-  const wallet_data = await queryHelper.findoneData(
-    UserWallet,
-    userWalletFindData,
-    {}
-  );
-  let balance = 0;
-  if (wallet_data.status && wallet_data.msg) {
-    if (type == 'p2pWallet') {
-      balance = wallet_data.msg.p2pAmount;
-    } else if (type == 'usdmWallet') {
-      balance = wallet_data.msg.perpetualAmount;
-    } else {
-      balance = wallet_data.msg.amount;
-    }
-  } else {
-    let createwallet = {
+  try {
+    const userWalletFindData = {
       userId: mongoose.mongo.ObjectId(userId),
       currencyId: mongoose.mongo.ObjectId(currencyId),
-      p2pAmount: 0,
-      p2pHold: 0,
-      perpetualAmount: 0,
-      perpetualHold: 0,
-      amount: 0,
-      hold: 0,
+    }
+    const wallet_data = await queryHelper.findoneData(
+      UserWallet,
+      userWalletFindData,
+      {}
+    );
+    let balance = 0;
+    if (wallet_data.status && wallet_data.msg) {
+      if (type == 'p2pWallet') {
+        balance = wallet_data.msg.p2pAmount;
+      } else if (type == 'usdmWallet') {
+        balance = wallet_data.msg.perpetualAmount;
+      } else {
+        balance = wallet_data.msg.amount;
+      }
+    } else {
+      let createwallet = {
+        userId: mongoose.mongo.ObjectId(userId),
+        currencyId: mongoose.mongo.ObjectId(currencyId),
+        p2pAmount: 0,
+        p2pHold: 0,
+        perpetualAmount: 0,
+        perpetualHold: 0,
+        amount: 0,
+        hold: 0,
+      };
+      await queryHelper.insertData(UserWallet, createwallet);
+      balance = 0;
+    }
+
+    const updations = {
+      userId: mongoose.mongo.ObjectId(userId),
+      currencyId: mongoose.mongo.ObjectId(currencyId),
+      amount: roundValues(amount, 8),
+      difference: roundValues(amount - balance, 8),
+      oldBalance: roundValues(balance, 8),
+      lastId: lastId,
+      type: type,
+      notes: extdata.notes ? JSON.stringify(extdata.notes) : "",
     };
-    await queryHelper.insertData(UserWallet, createwallet);
-    balance = 0;
+    let balanceId;
+    let balanceUpdColl;
+
+    if (type == 'p2pWallet') {
+      balanceUpdColl = P2PBalanceUpdation;
+    } else if (type == 'usdmWallet') {
+      balanceUpdColl = USDMBalanceUpdation;
+    } else {
+      balanceUpdColl = BalanceUpdation;
+    }
+
+    balanceId = await queryHelper.insertData(balanceUpdColl, updations);
+
+    let updBalData = {}
+    if (type == 'p2pWallet') {
+      updBalData = { p2pAmount: +roundValues(+amount, 8) };
+    } else if (type == 'usdmWallet') {
+      updBalData = { perpetualAmount: +roundValues(+amount, 8) };
+    }
+    else {
+      updBalData = { amount: +roundValues(+amount, 8) };
+    }
+
+    await queryHelper.updateData(
+      UserWallet,
+      "one",
+      userWalletFindData,
+      updBalData
+    );
+
+    if (balanceId && balanceId.msg && balanceId.msg._id) {
+      return balanceId.msg._id;
+    }
+    else {
+      return false;
+    }
+  } catch (error) {
+    console.error("updateUserBalance error:", error);
+    throw error;
   }
 
-  const updations = {
-    userId: mongoose.mongo.ObjectId(userId),
-    currencyId: mongoose.mongo.ObjectId(currencyId),
-    amount: roundValues(amount, 8),
-    difference: roundValues(amount - balance, 8),
-    oldBalance: roundValues(balance, 8),
-    lastId: lastId,
-    type: type,
-    notes: extdata.notes ? JSON.stringify(extdata.notes) : "",
-  };
-  let balanceId;
-  let balanceUpdColl;
-
-  if (type == 'p2pWallet') {
-    balanceUpdColl = P2PBalanceUpdation;
-  } else if (type == 'usdmWallet') {
-    balanceUpdColl = USDMBalanceUpdation;
-  } else {
-    balanceUpdColl = BalanceUpdation;
-  }
-
-  balanceId = await queryHelper.insertData(balanceUpdColl, updations);
-
-  let updBalData = {}
-  if (type == 'p2pWallet') {
-    updBalData = { p2pAmount: +roundValues(+amount, 8) };
-  } else if (type == 'usdmWallet') {
-    updBalData = { perpetualAmount: +roundValues(+amount, 8) };
-  }
-  else {
-    updBalData = { amount: +roundValues(+amount, 8) };
-  }
-
-  await queryHelper.updateData(
-    UserWallet,
-    "one",
-    userWalletFindData,
-    updBalData
-  );
-
-  if (balanceId && balanceId.msg && balanceId.msg._id) {
-    return balanceId.msg._id;
-    // return updations;
-  }
-  else {
-    return false;
-  }
 };
 //============Game Wallet Updation====================//
 exports.updateOptionsgameWalletAmount = async function (
@@ -411,38 +394,43 @@ exports.updateOptionsgameWalletAmount = async function (
   lastId,
   type
 ) {
-  const wallet_data = await queryHelper.findoneData(
-    UserWallet,
-    {
+  try {
+    const wallet_data = await queryHelper.findoneData(
+      UserWallet,
+      {
+        userId: mongoose.mongo.ObjectId(userId),
+        currencyId: mongoose.mongo.ObjectId(currencyId),
+      },
+      {}
+    );
+    let balance = 0;
+    if (wallet_data.status) {
+      balance = wallet_data.msg.optionsGameAmount;
+    }
+    const updations = {
       userId: mongoose.mongo.ObjectId(userId),
       currencyId: mongoose.mongo.ObjectId(currencyId),
-    },
-    {}
-  );
-  let balance = 0;
-  if (wallet_data.status) {
-    balance = wallet_data.msg.optionsGameAmount;
+      amount: roundValues(amount, 8),
+      difference: roundValues(amount - balance, 8),
+      oldBalance: roundValues(balance, 8),
+      lastId: lastId,
+      type: type,
+    };
+    await queryHelper.insertData(OptionsGameBalance, updations);
+    await queryHelper.updateData(
+      UserWallet,
+      "one",
+      {
+        userId: mongoose.mongo.ObjectId(userId),
+        currencyId: mongoose.mongo.ObjectId(currencyId),
+      },
+      { optionsGameAmount: +roundValues(+amount, 8) }
+    );
+  } catch (error) {
+    console.error("updateOptionsgameWalletAmount error:", error);
+    throw error;
   }
-  const updations = {
-    userId: mongoose.mongo.ObjectId(userId),
-    currencyId: mongoose.mongo.ObjectId(currencyId),
-    amount: roundValues(amount, 8),
-    difference: roundValues(amount - balance, 8),
-    oldBalance: roundValues(balance, 8),
-    lastId: lastId,
-    type: type,
-  };
-  await queryHelper.insertData(OptionsGameBalance, updations);
-  await queryHelper.updateData(
-    UserWallet,
-    "one",
-    {
-      userId: mongoose.mongo.ObjectId(userId),
-      currencyId: mongoose.mongo.ObjectId(currencyId),
-    },
-    { optionsGameAmount: +roundValues(+amount, 8) }
-  );
-  // return true;
+
 };
 
 exports.mathRound = (num1, num2, type) => {
@@ -486,41 +474,31 @@ let roundValues = (exports.roundValues = (numIn, precision = 2) => {
   return parseFloat(sign + (baseLH + baseRH).replace(/^0*(\d+|\d+\.\d+?)\.?0*$/, "$1")).toFixed(precision);
 })
 
-let roundValuesOld = (exports.roundValuesOld = (num, precision) => {
-  if (num.toString().indexOf("e") > -1) {
-    num = num.toLocaleString("fullwide", { useGrouping: false });
-    // const numChk = num.toLocaleString("fullwide", { useGrouping: false });
-    // if (parseFloat(numChk) !== 0) {
-    //   num = numChk;
-    // }
-  }
-  var num1 = num.toString().split(".");
-  var num2 = num1[0];
-  if (num1.length == 2) {
-    num2 = num2 + "." + num1[1].substring(0, precision);
-  }
-  return parseFloat(num2).toFixed(precision);
-});
-
 exports.cronCheck = async function (data = {}, callback) {
-  var file = path.join(__dirname, '../public/settings/settings.json');
-  return fs.readFile(file, function (err, data) {
-    if (err) {
-      callback({ status: false });
-    }
-    const datas = JSON.parse(data);
-    if (datas && datas.cron) {
-      if (datas.cron == "enable") {
-        callback({ status: true });
+  try {
+    var file = path.join(__dirname, '../public/settings/settings.json');
+    return fs.readFile(file, function (err, data) {
+      if (err) {
+        callback({ status: false });
+      }
+      const datas = JSON.parse(data);
+      if (datas && datas.cron) {
+        if (datas.cron == "enable") {
+          callback({ status: true });
+        }
+        else {
+          callback({ status: false });
+        }
       }
       else {
         callback({ status: false });
       }
-    }
-    else {
-      callback({ status: false });
-    }
-  });
+    });
+  } catch (error) {
+    console.error("cronCheck error:", error);
+    return callback({ status: false });
+  }
+
 };
 
 exports.OptionsGameBalanceUpdation = async (

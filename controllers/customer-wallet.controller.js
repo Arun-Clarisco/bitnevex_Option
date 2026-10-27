@@ -13,6 +13,19 @@ const query_helper = require("../helpers/query.helper");
  * @param {Object} walletBody
  * @returns {Promise<UserWallet>}
  */
+
+
+//** time interval managed based on userId or userDetails */
+let oArray = [];
+function _intervalFunc(orderwith) {
+    orderwith = orderwith.toString();
+    var index = oArray.indexOf(orderwith);
+    if (index > -1) {
+        oArray.splice(index, 1);
+    }
+}
+
+
 const submitTransfer = async (req, res) => {
     try {
         if (common.getSiteDeploy() == 0) {
@@ -148,15 +161,7 @@ const submitTransfer = async (req, res) => {
     }
 };
 
-//** time interval managed based on userId or userDetails */
-let oArray = [];
-function _intervalFunc(orderwith) {
-    orderwith = orderwith.toString();
-    var index = oArray.indexOf(orderwith);
-    if (index > -1) {
-        oArray.splice(index, 1);
-    }
-}
+
 module.exports = {
     submitTransfer
 }

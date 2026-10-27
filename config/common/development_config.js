@@ -12,7 +12,7 @@ module.exports = {
 	dbName: dbName,
 	dbconnection: `mongodb://${dbUser}:${dbPwd}@${dbCluster}/${dbName}?retryWrites=true&w=majority`,
 	caPath: "",
-	port: 4006,
+	port: 3007,
 	passPhrase: '.S+X)Zmur=br;y+$2xjBfkJyTm1].v9-',
 	algorithm: 'aes-256-ctr',
 	iv: 'bLMjTTIuNUpWe345',
@@ -32,20 +32,18 @@ module.exports = {
 			},
 			email: 'noreply@nvxo.io'
 		},
+		zeptomail_URL : "api.zeptomail.eu/v1.1/email",
+		zepto_Token : "Zoho-enczapikey yA6KbHtT6Q/wl2JQQUQ80Jbf8Yw5//87gHu/5320e8ZyKNaziaFu1RM9ItCzJWfdiNCDsqkAY90QJIvov4sMLJBhYIdRK5TGTuv4P2uV48xh8ciEYNYvjJ6tArIXEqRMdhIsCSgzTvFt"
 	},
 	serverType: 'http',
-	options: {
-		// 
-	},
+	
 	// frontEnd: 'http://localhost:3000/',
 	// backEnd: 'http://localhost:3008/api/',
 	frontEnd: 'https://www.nvxo.io/',
 	backEnd: "https://options-api.nvxo.io/api/",
-	galleryLink: "https://options-api.nvxo.io/",
+	galleryLink: "https://www.nvxo.io/",
 	siteName: 'NVXO',
 	url: "nvxo.io",
-	Exchange_Frontend: "https://www.nvxo.io",
-	Exchange_Admin: "https://7lxqmpsow7obo7evycdsp.nvxo.com",
 
 	timer: {
 		resendOtp: 120

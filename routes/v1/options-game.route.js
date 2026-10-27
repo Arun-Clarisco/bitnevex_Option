@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { PlaceBetController, customerWalletController } = require("../../controllers");
+const { PlaceBetController } = require("../../controllers");
 const commonHelper = require("../../helpers/common.helper");
 router.route("/optionsGame").post(commonHelper.encMiddleWare, commonHelper.tokenMiddlewareCustomers, PlaceBetController.addNewPlacebit);
 router.route("/userOptionsGame").post(commonHelper.tokenMiddlewareCustomers, PlaceBetController.getUserBasedPrediction);

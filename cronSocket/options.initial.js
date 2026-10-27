@@ -6,5 +6,4 @@ exports.initialCall = async function () {
   const io = socketHelper.GetSocket();
   OptionsGameHelper.SocketInit(io);
   OptionsGameSocket.SocketInit(io);
-  OptionsGameSocket.initialCall();
 }
