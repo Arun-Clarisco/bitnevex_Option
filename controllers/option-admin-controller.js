@@ -11,6 +11,31 @@ const getOptionsHistory = async (req, res) => {
 
   try {
     let getdata = req.body.formvalue;
+    console.log("getdata==", getdata);
+
+    if (!getdata || typeof getdata !== "object") {
+      return res.send({
+        status: false,
+        message: "Invalid form data"
+      });
+    }
+
+    let limit = req.body.limit ? parseInt(req.body.limit) : 10;
+    let offset = req.body.offset ? parseInt(req.body.offset) : 0
+
+    if (isNaN(limit) || limit <= 0) {
+      return res.send({
+        status: false,
+        message: "Invalid limit"
+      });
+    }
+
+    if (isNaN(offset) || offset < 0) {
+      return res.send({
+        status: false,
+        message: "Invalid offset"
+      });
+    }
 
     let matchQ = [{ $ne: '' }, { $regex: '', $options: 'i' }, { $regex: '', $options: 'i' }, { $regex: '', $options: 'i' }, { $regex: '', $options: 'i' }];
     matchQ.predictionStatus = 1;
@@ -36,8 +61,7 @@ const getOptionsHistory = async (req, res) => {
     if (getdata.pairs != '') {
       matchQ[3] = { $regex: getdata.pairs, $options: 'i' };
     }
-    let limit = req.body.limit ? parseInt(req.body.limit) : 10;
-    let offset = req.body.offset ? parseInt(req.body.offset) : 0
+
 
     const getHistoryData = await OptionsGame.aggregate([
       {
