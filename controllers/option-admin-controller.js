@@ -11,7 +11,6 @@ const getOptionsHistory = async (req, res) => {
 
   try {
     let getdata = req.body.formvalue;
-    console.log("getdata==", getdata);
 
     if (!getdata || typeof getdata !== "object") {
       return res.send({
