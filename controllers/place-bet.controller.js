@@ -25,7 +25,6 @@ const addNewPlacebit = async (req, res) => {
   try {
 
     const pdata = req.body;
-    console.log("pdata===", pdata)
 
     const requiredFields = [
       "wager",
@@ -89,9 +88,6 @@ const addNewPlacebit = async (req, res) => {
     }
 
     const pairsData = getCurrency.map(item => item.pair);
-
-    console.log("Allowed Options Pairs:", pairsData);
-    console.log("Requested Pair:", pdata.pair);
 
     if (!pairsData.includes(pdata.pair)) {
       return res.send({
@@ -244,8 +240,6 @@ const addNewPlacebit = async (req, res) => {
     const calculatedFee = Number(
       ((newBustPrice * optionsFlatFee) / 100).toFixed(8)
     );
-
-    console.log({ calculatedFee })
 
     if (Math.abs(betFeeAmt - calculatedFee) > 0.00000001) {
       return res.send({
@@ -666,7 +660,6 @@ const getUserGameWalletBalance = async (data) => {
     }
 
     let userWalletBalance = await UserWallet.findOne({ userId: ObjectId(pdata.userLoginId), currencyId: ObjectId(pdata.currencyId) }, { optionsGameAmount: 1, userId: 1 });
-    // console.log("userWalletBalance---",userWalletBalance);
 
     if (userWalletBalance) {
       return ({ status: true, data: userWalletBalance });
