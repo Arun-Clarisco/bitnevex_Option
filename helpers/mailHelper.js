@@ -1,21 +1,16 @@
 
 let config = require("../config/config");
-const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
-const smtpdetails = config.primarySmtp.smtpDetails.keys;
 const query_helper = require('../helpers/query.helper');
 const siteSettings = mongoose.model("SiteSettings");
-const sgMail = require('@sendgrid/mail');
 const primaryConfig = config.primarySmtp;
-const transporter = nodemailer.createTransport(smtpdetails);
 const { SendMailClient } = require("zeptomail");
-const url = "api.zeptomail.eu/v1.1/email";
-const token = "Zoho-enczapikey yA6KbHtT6Q/wl2JQQUQ80Jbf8Yw5//87gHu/5320e8ZyKNaziaFu1RM9ItCzJWfdiNCDsqkAY90QJIvov4sMLJBhYIdRK5TGTuv4P2uV48xh8ciEYNYvjJ6tArIXEqRMdhIsCSgzTvFt";
+const url = primaryConfig.zeptomail_URL;
+const token = primaryConfig.zepto_Token;
 let client = new SendMailClient({ url, token });
 
 exports.sendMail = async (values, callback) => {
 	try {
-		// return callback(true)
 		return await mailService(values, primaryConfig, callback);
 	} catch (error) {
 		console.log({ mailservice: error.error.details });
@@ -23,91 +18,97 @@ exports.sendMail = async (values, callback) => {
 };
 
 async function mailService(values, smtpConfig, callback) {
-	let admin = await query_helper.findoneData(siteSettings, {}, {});
-	const nDate = new Date().toLocaleString('en-US', {
-		timeZone: 'Asia/Calcutta'
-	});
-	let d1 = new Date(nDate);
-	let dateInc = d1.getDate();
-	let monthInc = d1.getMonth() + 1;
-	let yearInc = d1.getFullYear();
-	if (dateInc < 10) {
-		dateInc = "0" + dateInc;
-	}
-	if (monthInc < 10) {
-		monthInc = "0" + monthInc;
-	}
-	const setDate = dateInc + "." + monthInc + "." + yearInc;
-	const setTime = ((d1.getHours() < 10) ? "0" : "") + d1.getHours() + ":" + ((d1.getMinutes() < 10) ? "0" : "") + d1.getMinutes() + ":" + ((d1.getSeconds() < 10) ? "0" : "") + d1.getSeconds();
-	const configAdmin = admin.msg;
-	const termsUrl = `${config.frontEnd}terms`;
-	const privacyPolicyUrl = `${config.frontEnd}privacy-policy`;
+	try {
+		let admin = await query_helper.findoneData(siteSettings, {}, {});
+		const nDate = new Date().toLocaleString('en-US', {
+			timeZone: 'Asia/Calcutta'
+		});
+		let d1 = new Date(nDate);
+		let dateInc = d1.getDate();
+		let monthInc = d1.getMonth() + 1;
+		let yearInc = d1.getFullYear();
+		if (dateInc < 10) {
+			dateInc = "0" + dateInc;
+		}
+		if (monthInc < 10) {
+			monthInc = "0" + monthInc;
+		}
+		const setDate = dateInc + "." + monthInc + "." + yearInc;
+		const setTime = ((d1.getHours() < 10) ? "0" : "") + d1.getHours() + ":" + ((d1.getMinutes() < 10) ? "0" : "") + d1.getMinutes() + ":" + ((d1.getSeconds() < 10) ? "0" : "") + d1.getSeconds();
+		const configAdmin = admin.msg;
+		const termsUrl = `${config.frontEnd}terms`;
+		const privacyPolicyUrl = `${config.frontEnd}privacy-policy`;
 
-	values.html = values.html
-		.replace(/###LOGO###/g, configAdmin.siteLogo)
-		.replace(/###SITENAME###/g, configAdmin.siteName)
-		.replace(/###SUPPORT###/g, configAdmin.supportEmail)
-		.replace(/###COPYRIGHT###/g, configAdmin.copyRights)
-		.replace(/###DATE###/g, setDate)
+		values.html = values.html
+			.replace(/###LOGO###/g, configAdmin.siteLogo)
+			.replace(/###SITENAME###/g, configAdmin.siteName)
+			.replace(/###SUPPORT###/g, configAdmin.supportEmail)
+			.replace(/###COPYRIGHT###/g, configAdmin.copyRights)
+			.replace(/###DATE###/g, setDate)
 
-	values.html = mailHTMLNew
-		.replace(/###LOGO###/g, configAdmin.siteLogo)
-		.replace(/###MAINCONTENT###/g, values.html)
-		.replace(/###SITELINK###/g, config.frontEnd)
-		.replace(/###GALLERYLINK###/g, config.galleryLink)
-		.replace(/###FANTOKENSYMBOL###/g, config.FanTknSymbol)
-		.replace(/###COPYRIGHT###/g, configAdmin.copyRights)
-		.replace(/###FBLINK###/g, configAdmin.facebookLink)
-		.replace(/###TWITTERLINK###/g, configAdmin.twitterLink)
-		.replace(/###INSTALINK###/g, configAdmin.instagramLink)
-		.replace(/###LINKEDIN###/g, configAdmin.linkedinLink)
-		.replace(/###YOUTUBELINK###/g, configAdmin.youtubeLink)
-		.replace(/###TERMSURL###/g, termsUrl)
-		.replace(/###PRIVACY###/g, privacyPolicyUrl)
-		.replace(/undefined/g, "");
+		values.html = mailHTMLNew
+			.replace(/###LOGO###/g, configAdmin.siteLogo)
+			.replace(/###MAINCONTENT###/g, values.html)
+			.replace(/###SITELINK###/g, config.frontEnd)
+			.replace(/###GALLERYLINK###/g, config.galleryLink)
+			.replace(/###FANTOKENSYMBOL###/g, config.FanTknSymbol)
+			.replace(/###COPYRIGHT###/g, configAdmin.copyRights)
+			.replace(/###FBLINK###/g, configAdmin.facebookLink)
+			.replace(/###TWITTERLINK###/g, configAdmin.twitterLink)
+			.replace(/###INSTALINK###/g, configAdmin.instagramLink)
+			.replace(/###LINKEDIN###/g, configAdmin.linkedinLink)
+			.replace(/###YOUTUBELINK###/g, configAdmin.youtubeLink)
+			.replace(/###TERMSURL###/g, termsUrl)
+			.replace(/###PRIVACY###/g, privacyPolicyUrl)
+			.replace(/undefined/g, "");
 
-	values.subject = values.subject
-		.replace(/###SITENAME###/g, configAdmin.siteName)
-		.replace(/undefined/g, configAdmin.siteName);
+		values.subject = values.subject
+			.replace(/###SITENAME###/g, configAdmin.siteName)
+			.replace(/undefined/g, configAdmin.siteName);
 
-	let mailOptions = {
-		"from": {
-			"address": smtpConfig.smtpDetails.email,
-			"name": "noreply"
-		},
-		"to": [
-			{
-				"email_address": {
-					"address": values.to,
-					"name": values.to.split('@')[0]
-				}
-			}
-		],
-		"subject": values.subject + ' @ ' + setDate + ' ' + setTime,
-		"htmlbody": values.html
-	};
-
-	if (typeof values.bcc == 'object' && values.bcc.length > 0) {
-		let splitVal = chunk(values.bcc, 49);
-		splitVal.forEach(async element => {
-			for (let idx = 0; idx < element.length; idx++) {
-				const email = element[idx];
-				mailOptions.to = email;
-				await client.sendMail(mailOptions, function (error, info) {
-					if (error) {
-						console.log(error);
+		let mailOptions = {
+			"from": {
+				"address": smtpConfig.smtpDetails.email,
+				"name": "noreply"
+			},
+			"to": [
+				{
+					"email_address": {
+						"address": values.to,
+						"name": values.to.split('@')[0]
 					}
-				});
-			};
-		});
-	} else {
-		await client.sendMail(mailOptions, function (error, info) {
-			if (error) {
-				console.log(error);
-			}
-		});
+				}
+			],
+			"subject": values.subject + ' @ ' + setDate + ' ' + setTime,
+			"htmlbody": values.html
+		};
+
+		if (typeof values.bcc == 'object' && values.bcc.length > 0) {
+			let splitVal = chunk(values.bcc, 49);
+			splitVal.forEach(async element => {
+				for (let idx = 0; idx < element.length; idx++) {
+					const email = element[idx];
+					mailOptions.to = email;
+					await client.sendMail(mailOptions, function (error, info) {
+						if (error) {
+							console.log(error);
+						}
+					});
+				};
+			});
+		} else {
+			await client.sendMail(mailOptions, function (error, info) {
+				if (error) {
+					console.log(error);
+				}
+			});
+		}
+		callback(true);
+	} catch (error) {
+		console.error("mailService error:", error);
+		return callback(false);
 	}
-	callback(true);
+
 };
 function chunk(arr, len) {
 	var chunks = [],

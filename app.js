@@ -8,7 +8,6 @@ const config = require("./config/config");
 
 require("./model/db"); //** mongo-db connection imported */
 
-// const appapiRouter = require('./routes/base/appapiRouter');
 const webapiRouter = require('./routes/base/webapiRouter');
 const apiRouter = require("./routes/base/apiRouter");
 const appapiRouter = require("./routes/base/appapiRouter");
@@ -22,7 +21,6 @@ let port = config.port;
 
 // view engine setup
 app.use(morgan("dev"));
-// app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -42,7 +40,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "x-web-client-module"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "x-web-client-module", "X-Security-Header", "secure-header-value", "X-Client-IP"],
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('port', port);
@@ -76,7 +74,6 @@ io.on('connection', function (socket) {
 
   socket.on('getUserBalance', async function (data) {
     const UserBalance = await placeBetController.getUserGameWalletBalance(data);
-    // console.log("getUserBalance--",UserBalance);
     if (UserBalance) {
       io.sockets.emit('getUserBalanceResp', UserBalance);
     }
@@ -84,17 +81,13 @@ io.on('connection', function (socket) {
 
   socket.on('getTotalPairs', async function () {
     const TotalPairsData = await placeBetController.getTotalPairs();
-    // console.log("getTotalPairs--",TotalPairsData);
     if (TotalPairsData) {
       io.sockets.emit('getTotalPairsResp', TotalPairsData);
     }
   });
 
   socket.on('getSelectedPair', async function (data) {
-    // console.log("getSelectedPair==", data);
-
     const pairdata = await placeBetController.getSelectedPairs(data);
-    // console.log("getSelectedPair--",pairdata);
     if (pairdata) {
       io.sockets.to(socket.id).emit('getSelectedPairResp', pairdata);
     }
@@ -102,7 +95,6 @@ io.on('connection', function (socket) {
 
   socket.on('getActiveBets', async function (data) {
     const ActiveBets = await placeBetController.getUserBasedPrediction(data);
-    // console.log("getActiveBets--",ActiveBets);
     if (ActiveBets) {
       io.sockets.to(socket.id).emit('getActiveBetsResp', ActiveBets);
       io.sockets.emit("getActiveBetsRespMobile", ActiveBets)
@@ -115,18 +107,14 @@ io.on('connection', function (socket) {
 
 });
 
-
 app.use(function (req, res, next) {
-  // next(createError(404));
   res.json({ status: false, message: 'Not found' });
 });
 
 // error handler
 app.use(function (err, req, res, next) {
-  // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
-  // render the error page
   res.status(err.status || 500);
   res.render('error');
 });

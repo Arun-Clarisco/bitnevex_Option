@@ -8,7 +8,6 @@ const Pairs = Mongoose.model("Pairs");
 //** common & helper component imported */
 const queryHelper = require("../helpers/query.helper");
 const optionsGameServices = require("../services/options-game.services");
-const socketHelper = require('../helpers/socket.helper');
 const Currency = Mongoose.model("CurrencySymbol");
 const TradingGameData = Mongoose.model('Trading Time Settings');
 
@@ -41,7 +40,6 @@ cron.schedule("*/1 * * * * *", async () => {
         if (GameTiming?.msg?.length > 0) {
             setTime = GameTiming.msg[0].optionsTiming;
         }
-        // const setTime = GameTiming && GameTiming.msg[0].optionsTiming;
         let milliseconds = setTime * 60 * 1000;
 
         if (GameData && GameData.length > 0 && activePairs && activePairs.length > 0) {
@@ -52,7 +50,6 @@ cron.schedule("*/1 * * * * *", async () => {
                 }
 
                 const pairData = await getMarketPriceSpot(coinQuery);
-                // console.log("pairData---",pairData);
                 
                 var currentMarketPrice = pairData && pairData.marketPrice.toFixed(pairData.priceDecimal);
                 if (currentMarketPrice && GameData && GameData.length > 0) {

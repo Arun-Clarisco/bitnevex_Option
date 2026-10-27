@@ -5,7 +5,6 @@ const Mongoose = require('mongoose');
 const { ObjectId } = Mongoose.Types;
 const axios = require('axios');
 const optionsGameServices = require("../services/options-game.services");
-let common = require('./common.helper');
 var query_helper = require('./query.helper');
 
 //** db collection imported */
@@ -13,48 +12,18 @@ const OptionsGame = Mongoose.model("OptionsGame");
 const UserWallet = Mongoose.model("UserWallet")
 let siteSettings = Mongoose.model('SiteSettings');
 var Config = require('../config/config');
+var async = require('async');
 
 let siteSettingData = {};
 
-let adminDoc = {
-    '_id': '640daa81cd50574129530f03'
-}
-
-let oArrayOB = [];
-function _intervalFuncOB(orderwith) {
-    orderwith = orderwith.toString();
-    var index = oArrayOB.indexOf(orderwith);
-    if (index > -1) {
-        oArrayOB.splice(index, 1);
-    }
-}
-
-let oArrayOBSend = [];
-function _intervalFuncOBSend(orderwith) {
-    orderwith = orderwith.toString();
-    var index = oArrayOBSend.indexOf(orderwith);
-    if (index > -1) {
-        oArrayOBSend.splice(index, 1);
-    }
-}
-
-let oArrayRT = [];
-function _intervalFuncRT(orderwith) {
-    orderwith = orderwith.toString();
-    var index = oArrayRT.indexOf(orderwith);
-    if (index > -1) {
-        oArrayRT.splice(index, 1);
-    }
-}
 
 async function updateSiteSettings() {
     let settings = await query_helper.findoneData(siteSettings, {}, {})
     siteSettingData = settings.msg;
 }
 updateSiteSettings();
-let oArray = [], activePairs = [], recentTrade = {}, tradeWS;
+let oArray = [];
 
-var async = require('async');
 var mapTrade = function () { };
 let _tradeMap = new mapTrade();
 var socket = 0;
@@ -72,12 +41,7 @@ mapTrade.prototype._intervalFunc = (orderwith) => {
         oArray.splice(index, 1);
     }
 }
-function removeintervalFunc(orderwith) {
-    var index = oArray.indexOf(orderwith);
-    if (index > -1) {
-        oArray.splice(index, 1);
-    }
-};
+
 mapTrade.prototype._createResponseOptionsGame = async function (response, channelName = 'createResponsePredictionGame') {
     if (response.message && respMessage_helper && respMessage_helper[response.message]) {
         response['message'] = respMessage_helper[response.message];
@@ -98,8 +62,7 @@ mapTrade.prototype._userEmit = async function (userQuery, userId, pairId, curren
         const { sort, limit, offset } = userQuery;
         var userResponse = {};
         userResponse.userId = userId;
-        // userResponse.pairId = pairId;
-        // const balance2 = toCurn != '' ? await common.getbalance(userId, toCurn) : 0;
+        
         async.parallel({
             activeBets: async function () {
                 let query = { userId: ObjectId(userId), currencyId: ObjectId(currencyId), predictionStatus: 0 };
@@ -143,7 +106,6 @@ mapTrade.prototype._userEmit = async function (userQuery, userId, pairId, curren
                         { $match: query },
                         { '$sort': sort },
                         { '$limit': offset + limit },
-                        // { '$skip': offset },
                         { $project: { __v: 0, createdAt: 0, updatedAt: 0 } }
                     ]);
                     return resData;
@@ -206,12 +168,5 @@ exports.closePredictionBets = async function (reqBody) {
             "message": "Something went wrong! Please try again someother time",
             "userId": reqBody.userId
         });
-    }
-};
-mapTrade.prototype._closePredictionBets = async () => {
-    try {
-
-    } catch (error) {
-        console.log("_closeBets response err :", error);
     }
 };
