@@ -199,9 +199,6 @@ const addNewPlacebit = async (req, res) => {
       });
     }
 
-
-
-
     const getData = await TradingGameData.find({});
 
     if (!getData || getData.length === 0) {
@@ -237,9 +234,7 @@ const addNewPlacebit = async (req, res) => {
     // Options flat fee validation
     // =========================
     const newBustPrice = wager * multiplier;
-    const calculatedFee = Number(
-      ((newBustPrice * optionsFlatFee) / 100).toFixed(8)
-    );
+    const calculatedFee = Number(((newBustPrice * optionsFlatFee) / 100).toFixed(8));
 
     if (Math.abs(betFeeAmt - calculatedFee) > 0.00000001) {
       return res.send({
@@ -248,9 +243,7 @@ const addNewPlacebit = async (req, res) => {
       });
     }
 
-    const expectedActualWager = Number(
-      (wager - calculatedFee).toFixed(8)
-    );
+    const expectedActualWager = Number((wager - calculatedFee).toFixed(8));
 
     if (expectedActualWager <= 0) {
       return res.send({
@@ -262,10 +255,7 @@ const addNewPlacebit = async (req, res) => {
     // =========================================================
     // 13. Validate frontend actual wager
     // =========================================================
-    if (
-      Math.abs(actualWager - expectedActualWager) >
-      0.00000001
-    ) {
+    if (Math.abs(actualWager - expectedActualWager) > 0.00000001) {
       return res.send({
         status: false,
         message: "Invalid actual wager amount"
@@ -275,14 +265,9 @@ const addNewPlacebit = async (req, res) => {
     // =========================================================
     // 14. Final wager consistency check
     // =========================================================
-    const calculatedWager = Number(
-      (actualWager + betFeeAmt).toFixed(8)
-    );
+    const calculatedWager = Number((actualWager + betFeeAmt).toFixed(8));
 
-    if (
-      Math.abs(calculatedWager - wager) >
-      0.00000001
-    ) {
+    if (Math.abs(calculatedWager - wager) > 0.00000001) {
       return res.send({
         status: false,
         message: "Invalid wager amount or fee amount"
@@ -709,7 +694,7 @@ const getAllPairs = async (req, res) => {
         message: "Invalid Currency ID"
       });
     }
-    
+
     const getCurrency = await Pairs.find({ toCurrencyId: ObjectId(pdata.currencyId), optionsStatus: 1 });
     const PairsData = getCurrency.map(item => item.pair);
 

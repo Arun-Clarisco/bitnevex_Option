@@ -12,7 +12,7 @@ const webapiRouter = require('./routes/base/webapiRouter');
 const apiRouter = require("./routes/base/apiRouter");
 const appapiRouter = require("./routes/base/appapiRouter");
 const admapiRouter = require("./routes/base/admapiRouter");
-const middlewareHelper = require('./helpers/middleware.helper');
+const commonHelper = require('./helpers/common.helper');
 const socketHelper = require('./helpers/socket.helper');
 const placeBetController = require('./controllers/place-bet.controller');
 
@@ -45,10 +45,10 @@ app.use(cors({
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('port', port);
 
-app.use('/api', middlewareHelper.middlewareApi, apiRouter);
-app.use('/webapi', middlewareHelper.middlewareWebapi, webapiRouter);
-app.use('/appapi', middlewareHelper.middlewareAppApi, appapiRouter);
-app.use('/admapi', middlewareHelper.middlewareAdmapi, admapiRouter);
+app.use('/api', commonHelper.middlewareApi, apiRouter);
+app.use('/webapi', commonHelper.middlewareWebapi, webapiRouter);
+app.use('/appapi', commonHelper.middlewareAppApi, appapiRouter);
+app.use('/admapi', commonHelper.middlewareAdmapi, admapiRouter);
 
 let server;
 if (config.serverType == 'http') {

@@ -11,7 +11,6 @@ const UserWallet = mongoose.model("UserWallet");
 const Users = mongoose.model("Users");
 const Notification = mongoose.model("Notification");
 const OptionsGameBalance = mongoose.model("OptionsGameBalanceUpdation");
-const sitesetting = mongoose.model("SiteSettings");
 const Admin = mongoose.model("Admin");
 const AccessToken = mongoose.model("AccessToken");
 
@@ -20,66 +19,6 @@ let siteDeploy = 0;
 let jwtTokenCustomers = config.jwtTokenCustomers;
 let usdtRate = { changePer: 0, usdtType: 0, changeValue: 0 };
 
-let usdtRateCall = 0;
-function _intervalFunc() {
-  if (usdtRateCall == 1) {
-    usdtRateCall = 0;
-  }
-}
-
-exports.setUsdtRateChange = async function () {
-  try {
-    let sitesettingdata = await queryHelper.findoneData(sitesetting, {}, {});
-
-    let changeValue =
-      sitesettingdata.status && sitesettingdata.msg.tradeUSDTValue > 0
-        ? sitesettingdata.msg.tradeUSDTValue
-        : 0;
-    let usdtType =
-      sitesettingdata.status && sitesettingdata.msg.tradeUSDTType == "+"
-        ? "+"
-        : "-";
-    let usdtChange =
-      changeValue > 0
-        ? usdtType == "+"
-          ? 80 + changeValue
-          : 80 - changeValue
-        : 0;
-    let changePer = changeValue > 0 ? usdtChange / 80 : 0;
-    usdtRate = { changePer, usdtType, changeValue };
-    return usdtRate;
-  } catch (error) {
-    console.log("error", error);
-    throw error;
-  }
-
-};
-exports.getUsdtRateChange = () => {
-  return usdtRate;
-};
-exports.setUsdtRate = (usdRate) => {
-  try {
-    if (usdtRateCall == 0) {
-      usdtRateCall = 1;
-      setTimeout(_intervalFunc, 300000);
-      if (usdtRate.changeValue > 0) {
-        let usdtChange =
-          usdtRate.changeValue > 0
-            ? usdtRate.usdtType == "+"
-              ? usdRate + usdtRate.changeValue
-              : usdRate - usdtRate.changeValue
-            : 0;
-        let changePer = usdtRate.changeValue > 0 ? usdtChange / usdRate : 0;
-        usdtRate.changePer = changePer;
-      }
-    }
-    return usdtRate;
-  } catch (error) {
-    console.log("error", error);
-    throw error;
-  }
-
-};
 
 exports.getSiteDeploy = () => {
   return siteDeploy;
@@ -199,6 +138,122 @@ exports.encMiddleWare = async (req, res, next) => {
   };
 };
 
+exports.middlewareApi = async function (request, res, next) {
+  try {
+    var file = path.join(__dirname, "../public/settings/settings.json");
+    fs.readFile(file, function (err, data) {
+      if (err) {
+        return res.json({ status: false, message: "Something went wrong" });
+      }
+      const datas = JSON.parse(data);
+      if (datas && datas.app) {
+        if (datas.app.api == "enable" && datas.deploy == "no") {
+          next();
+        } else if (datas.app.api == "disable" && datas.app.message != "") {
+          return res.json({ status: false, message: datas.app.message });
+        } else if (datas.deploy == "yes" && datas.message != "") {
+          return res.json({ status: false, message: datas.message });
+        } else {
+          return res.json({ status: false, message: "Something went wrong" });
+        }
+      } else {
+        return res.json({ status: false, message: "Something went wrong" });
+      }
+    });
+  } catch (error) {
+    console.error("middlewareApi error:", error);
+    return res.json({ status: false, message: "Something went wrong" });
+  }
+
+};
+
+exports.middlewareAppApi = async function (request, res, next) {
+  try {
+    var file = path.join(__dirname, "../public/settings/settings.json");
+    fs.readFile(file, function (err, data) {
+      if (err) {
+        return res.json({ status: false, message: "Something went wrong" });
+      }
+      const datas = JSON.parse(data);
+      if (datas && datas.app) {
+        if (datas.app.api == "enable" && datas.deploy == "no") {
+          next();
+        } else if (datas.app.api == "disable" && datas.app.message != "") {
+          return res.json({ status: false, message: datas.app.message });
+        } else if (datas.deploy == "yes" && datas.message != "") {
+          return res.json({ status: false, message: datas.message });
+        } else {
+          return res.json({ status: false, message: "Something went wrong" });
+        }
+      } else {
+        return res.json({ status: false, message: "Something went wrong" });
+      }
+    });
+  } catch (error) {
+    console.error("middlewareApi error:", error);
+    return res.json({ status: false, message: "Something went wrong" });
+  }
+
+};
+
+exports.middlewareAdmapi = async function (request, res, next) {
+  try {
+    var file = path.join(__dirname, "../public/settings/settings.json");
+    fs.readFile(file, function (err, data) {
+      if (err) {
+        return res.json({ status: false, message: "Something went wrong" });
+      }
+      const datas = JSON.parse(data);
+      if (datas && datas.adm) {
+        if (datas.adm.api == "enable" && datas.deploy == "no") {
+          next();
+        } else if (datas.adm.api == "disable" && datas.adm.message != "") {
+          return res.json({ status: false, message: datas.adm.message });
+        } else if (datas.deploy == "yes" && datas.message != "") {
+          return res.json({ status: false, message: datas.message });
+        } else {
+          return res.json({ status: false, message: "Something went wrong" });
+        }
+      } else {
+        return res.json({ status: false, message: "Something went wrong" });
+      }
+    });
+  } catch (error) {
+    console.error("middlewareApi error:", error);
+    return res.json({ status: false, message: "Something went wrong" });
+  }
+
+};
+
+exports.middlewareWebapi = async function (request, res, next) {
+  try {
+    var file = path.join(__dirname, "../public/settings/settings.json");
+    fs.readFile(file, function (err, data) {
+      if (err) {
+        return res.json({ status: false, message: "Something went wrong" });
+      }
+      const datas = JSON.parse(data);
+      if (datas && datas.web) {
+        if (datas.web.api == "enable" && datas.deploy == "no") {
+          next();
+        } else if (datas.web.api == "disable" && datas.web.message != "") {
+          return res.json({ status: false, message: datas.web.message });
+        } else if (datas.deploy == "yes" && datas.message != "") {
+          return res.json({ status: false, message: datas.message });
+        } else {
+          return res.json({ status: false, message: "Something went wrong" });
+        }
+      } else {
+        return res.json({ status: false, message: "Something went wrong" });
+      }
+    });
+  } catch (error) {
+    console.error("middlewareApi error:", error);
+    return res.json({ status: false, message: "Something went wrong" });
+  }
+
+};
+
 
 exports.tokenMiddlewareAdmin = async function (request, res, next) {
   try {
@@ -225,69 +280,54 @@ exports.tokenMiddlewareAdmin = async function (request, res, next) {
         return res.status(401).send("unauthorized");
       }
     }
-  } catch (error) {
-    return res.status(403).json({ status: false, message: "unauthorized" });
+  } catch (e) {
+    console.log("tokenMiddlewareAdmin", e, request.headers.authorization);
+    return res.status(401).json({ status: false, message: "unauthorized" });
   }
+
 };
 
 exports.tokenMiddlewareCustomers = async (request, res, next) => {
   try {
-    const token = request.cookies && request.cookies.userToken;
-    if (!token) {
+    if (!request.headers.authorization) {
       return res.status(401).json({ status: false, message: "unauthorized" });
     }
-    if (token == "null") {
+    let token = request.headers.authorization.split(" ")[1];
+    if (token === "null") {
       return res.status(401).json({ status: false, message: "unauthorized" });
     } else {
       let payload = jwt.verify(token, jwtTokenCustomers);
       if (!payload) {
         return res.status(401).json({ status: false, message: "unauthorized" });
-      } else {
-        const isLoginData = await queryHelper.findoneData(
-          AccessToken,
-          { userId: mongoose.Types.ObjectId(payload.subject), token: token },
-          {}
-        );
-        if (isLoginData.status) {
-          const userData = await queryHelper.findoneData(
-            Users,
-            {
-              _id: mongoose.Types.ObjectId(payload.subject),
-              status: 1,
-              securityKey: payload.securityKey,
-            },
-            {}
-          );
-          if (userData.status) {
-            if (userData.msg.status === 0) {
-              return res.status(401).json({
-                status: false,
-                message: "Your account is disabled by admin",
-              });
-            }
-            let activeUser = await queryHelper.findoneData(AccessToken, { userId: userData.msg._id });
-            activeUser = activeUser.msg;
-            if (activeUser.token != token) {
-              return res.status(401).json({ status: false, message: "unauthorized User" });
-            }
-            request.reqUserData = userData.msg;
-            request.userId = payload.subject;
-            request.securityKey = payload.securityKey;
-            next();
-          } else {
-            return res
-              .status(401)
-              .json({ status: false, message: "unauthorized" });
-          }
-        } else {
+      }
+      const userData = await queryHelper.findoneData(
+        Users,
+        {
+          _id: mongoose.Types.ObjectId(payload.subject),
+          status: 1,
+          securityKey: payload.securityKey,
+        },
+        {}
+      );
+      if (userData.status) {
+        if (userData.msg.status === 0) {
           return res
             .status(401)
-            .json({ status: false, message: "unauthorized" });
+            .json({
+              status: false,
+              message: "Your account is disabled by admin",
+            });
         }
+        request.reqUserData = userData.msg;
+        request.userId = payload.subject;
+        request.securityKey = payload.securityKey;
+        next();
+      } else {
+        return res.status(401).json({ status: false, message: "unauthorized" });
       }
     }
   } catch (e) {
-    console.log("tokenMiddlewareCustomers", e);
+    console.log("tokenMiddlewareCustomers", e, request.headers.authorization);
     return res.status(401).json({ status: false, message: "unauthorized" });
   }
 };
@@ -431,18 +471,6 @@ exports.updateOptionsgameWalletAmount = async function (
     throw error;
   }
 
-};
-
-exports.mathRound = (num1, num2, type) => {
-  if (type == "addition") {
-    return Math.round((+num1 + +num2) * 1e12) / 1e12;
-  } else if (type == "subtraction") {
-    return Math.round((num1 - num2) * 1e12) / 1e12;
-  } else if (type == "multiplication") {
-    return Math.round(num1 * num2 * 1e12) / 1e12;
-  } else if (type == "division") {
-    return Math.round((num1 / num2) * 1e12) / 1e12;
-  }
 };
 
 let roundValues = (exports.roundValues = (numIn, precision = 2) => {
