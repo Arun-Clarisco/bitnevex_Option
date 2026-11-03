@@ -48,3 +48,7 @@ public/settings
 public/fibitJson
 public/whitepaper/
 Config/main/
+# Environment files (real secrets) - only the example is committed
+.env
+.env.*
+!.env.example

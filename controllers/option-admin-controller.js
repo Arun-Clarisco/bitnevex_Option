@@ -1,161 +1,83 @@
-//** package imported */
 const Mongoose = require("mongoose");
-const { ObjectId } = Mongoose.Types;
-//** db collection imported */
+
 const OptionsGame = Mongoose.model("OptionsGame");
-const Pairs = Mongoose.model("Pairs");
-const Currency = Mongoose.model("CurrencySymbol");
-const queryHelper = require("../helpers/query.helper");
+const game = require("../services/options-game.services");
 
+const GENERIC_ERROR = "Something went wrong! Please try again someother time";
+
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const contains = (text) => ({ $regex: escapeRegex(text), $options: "i" });
+
+/**
+ * POST /getOptionsHistory
+ * Body (validated by the route): { limit, offset, formvalue: { username, callputs, pairs, fromdate, todate } }
+ * Closed positions with the user, newest first.
+ */
 const getOptionsHistory = async (req, res) => {
-
   try {
-    let getdata = req.body.formvalue;
+    const { limit, offset, formvalue: filters } = req.body;
 
-    if (!getdata || typeof getdata !== "object") {
-      return res.send({
-        status: false,
-        message: "Invalid form data"
-      });
+    const match = { predictionStatus: game.STATUS.CLOSED };
+    if (filters.fromdate && filters.todate) {
+      // Dates arrive as IST calendar days; the whole "to" day is included
+      match.dateTime = {
+        $gte: new Date(filters.fromdate.getTime() + IST_OFFSET_MS),
+        $lt: new Date(filters.todate.getTime() + IST_OFFSET_MS + DAY_MS),
+      };
     }
+    if (filters.callputs) match.direction = filters.callputs;
+    if (filters.pairs) match.pairName = filters.pairs;
 
-    let limit = req.body.limit ? parseInt(req.body.limit) : 10;
-    let offset = req.body.offset ? parseInt(req.body.offset) : 0
+    const userMatch = filters.username
+      ? { $or: [{ username: contains(filters.username) }, { uid: contains(filters.username) }] }
+      : {};
 
-    if (isNaN(limit) || limit <= 0) {
-      return res.send({
-        status: false,
-        message: "Invalid limit"
-      });
-    }
-
-    if (isNaN(offset) || offset < 0) {
-      return res.send({
-        status: false,
-        message: "Invalid offset"
-      });
-    }
-
-    let matchQ = [{ $ne: '' }, { $regex: '', $options: 'i' }, { $regex: '', $options: 'i' }, { $regex: '', $options: 'i' }, { $regex: '', $options: 'i' }];
-    matchQ.predictionStatus = 1;
-    if (getdata.fromdate != '' && getdata.todate != '') {
-      var fromDate = new Date(req.body.formvalue.fromdate);
-      var toDate = new Date(req.body.formvalue.todate);
-      var dateFilter = new Date(fromDate.setTime(fromDate.getTime() + 5.5 * 60 * 60 * 1000));
-      var nextDateFilter = new Date(toDate.setTime(toDate.getTime() + 29.49 * 60 * 60 * 1000));
-      matchQ[0] = {
-        "$gte": dateFilter,
-        "$lt": nextDateFilter
-      }
-    }
-
-    if (getdata.username != '') {
-      matchQ[1] = { $regex: getdata.username, $options: 'i' };
-    }
-
-    if (getdata.callputs != '') {
-      matchQ[2] = { $regex: getdata.callputs, $options: 'i' };
-    }
-
-    if (getdata.pairs != '') {
-      matchQ[3] = { $regex: getdata.pairs, $options: 'i' };
-    }
-
-
-    const getHistoryData = await OptionsGame.aggregate([
-      {
-        $match: {
-          dateTime: matchQ[0],
-          direction: matchQ[2],
-          pairName: matchQ[3]
-        }
-      },
+    const [result] = await OptionsGame.aggregate([
+      { $match: match },
       {
         $lookup: {
           from: "Users",
           let: { userId: "$userId" },
           pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$userId'] },
-                $or: [
-                  { username: matchQ[1] },
-                  { uid: matchQ[1] }
-                ]
-              }
-            }
+            { $match: { $expr: { $eq: ["$_id", "$$userId"] }, ...userMatch } },
+            { $project: { username: 1, uid: 1, email: 1 } },
           ],
-          as: 'result'
-        }
+          as: "result",
+        },
       },
       { $unwind: "$result" },
       { $sort: { _id: -1 } },
-      { $skip: offset },
-      { $limit: limit },
+      {
+        $facet: {
+          data: [{ $skip: offset }, { $limit: limit }],
+          total: [{ $count: "count" }],
+        },
+      },
     ]);
 
-    const getHistoryDataLength = await OptionsGame.aggregate([
-      {
-        $match: {
-          dateTime: matchQ[0],
-          direction: matchQ[2],
-          pairName: matchQ[3]
-        }
-      },
-      {
-        $lookup: {
-          from: "Users",
-          let: { userId: "$userId" },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$userId'] },
-                $or: [
-                  { username: matchQ[1] },
-                  { uid: matchQ[1] }
-                ]
-              }
-            }
-          ],
-          as: 'result'
-        }
-      },
-      { $unwind: "$result" },
-    ]);
-
-    if (getHistoryData) {
-      res.send({ status: true, data: getHistoryData, total: getHistoryDataLength.length })
-    } else {
-      res.send({ status: false, data: [], total: 0 })
-    }
+    return res.send({ status: true, data: result.data, total: result.total.length ? result.total[0].count : 0 });
   } catch (error) {
-    console.log("error: ", error);
-    res.send({ status: false, message: "Something went wrong! Please try again someother time" });
+    console.log("getOptionsHistory error: ", error);
+    return res.send({ status: false, message: GENERIC_ERROR });
   }
-}
+};
 
+/** GET /getPairs - options pairs quoted in USDT (for the history filter) */
 const getPairs = async (req, res) => {
-
   try {
-    const CurrencySymbols = await queryHelper.findoneData(Currency, { currencySymbol: "USDT" });
-
-    const CurrencyId = CurrencySymbols.msg._id;
-
-    const activePairList = await queryHelper.findData(Pairs, { toCurrencyId: ObjectId(CurrencyId), optionsStatus: 1 }, { pair: 1 }, {});
-
-    if (activePairList && activePairList.msg) {
-      const activePairs = activePairList && activePairList.msg;
-      res.send({ status: true, data: activePairs });
-    } else {
-      res.send({ status: false, data: [] });
-    }
+    const currencyId = await game.getUsdtCurrencyId();
+    const data = currencyId ? await game.getActivePairs(currencyId, { pair: 1 }) : [];
+    return res.send({ status: data.length > 0, data });
   } catch (error) {
-    console.log("error: ", error);
-    res.send({ status: false, message: "Something went wrong! Please try again someother time" });
+    console.log("getPairs error: ", error);
+    return res.send({ status: false, message: GENERIC_ERROR });
   }
-}
+};
 
 module.exports = {
   getOptionsHistory,
-  getPairs
-}
+  getPairs,
+};

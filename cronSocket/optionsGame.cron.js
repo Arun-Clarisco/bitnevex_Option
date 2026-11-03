@@ -1,89 +1,48 @@
-//** package imported */
 const Mongoose = require("mongoose");
-const { ObjectId } = Mongoose.Types;
 const cron = require("node-cron");
-//** db collection imported */
+
 const OptionsGame = Mongoose.model("OptionsGame");
-const Pairs = Mongoose.model("Pairs");
-//** common & helper component imported */
-const queryHelper = require("../helpers/query.helper");
-const optionsGameServices = require("../services/options-game.services");
-const Currency = Mongoose.model("CurrencySymbol");
-const TradingGameData = Mongoose.model('Trading Time Settings');
+const game = require("../services/options-game.services");
 
-const getMarketPriceSpot = async (coinQuery) => {
-    try {
-        const { pair, exchangeType } = coinQuery;
-        const where = pair != '' ? { exchangeType, pair, optionsStatus: 1 } : { exchangeType, optionsStatus: 1 };
-        const pairData = await Pairs.findOne(where).sort({ _id: 1 }).populate("fromCurrency").populate("toCurrency");
-        return pairData;
-    } catch (error) {
-        console.error("getMarketPriceSpot error:", error);
-        throw error;
-    }
+//** ---------- every second: close expired or liquidated positions ---------- */
 
-};
-/** 
- * @description at every mins schedule for prediction gaming closed bet checked and updating
- * @param {Object}
- * @returns {}
- */
-let liquidityCloseBet = false;
+let closingRun = false;
 
 cron.schedule("*/1 * * * * *", async () => {
+  if (closingRun) return; // previous run still settling
+  closingRun = true;
+  try {
+    const openBets = await OptionsGame.find(
+      { predictionStatus: game.STATUS.OPEN },
+      { userId: 1, dateTime: 1, direction: 1, bustprice: 1, pairName: 1 }
+    ).lean();
+    if (!openBets.length) return;
 
-    if (liquidityCloseBet) return true;
-    liquidityCloseBet = true;
-    try {
-        const GamePredict = await queryHelper.findData(OptionsGame, { predictionStatus: 0 }, {}, {});
-        const CurrencySymbols = await queryHelper.findoneData(Currency, { currencySymbol: "USDT" });
-        const CurrencyId = CurrencySymbols.msg._id;
-        const activePairList = await queryHelper.findData(Pairs, { toCurrencyId: ObjectId(CurrencyId), optionsStatus: 1 }, { pair: 1 }, {});
-        const activePairs = activePairList && activePairList.msg;
-        const GameData = GamePredict && GamePredict.msg;
-        const GameTiming = await queryHelper.findData(TradingGameData, {}, {}, {});
-        let setTime = null;
-        if (GameTiming?.msg?.length > 0) {
-            setTime = GameTiming.msg[0].optionsTiming;
-        }
-        let milliseconds = setTime * 60 * 1000;
+    const settings = await game.getTradingConfig();
+    if (!settings) return;
 
-        if (GameData && GameData.length > 0 && activePairs && activePairs.length > 0) {
-            for (let activePair of activePairs) {
-                let coinQuery = {
-                    pair: activePair.pair,
-                    exchangeType: 'SPOT'
-                }
+    // One price lookup per pair that has open positions
+    const pairNames = [...new Set(openBets.map((bet) => bet.pairName))];
+    const pairs = await Promise.all(pairNames.map((name) => game.getActivePair(name)));
+    const priceByPair = new Map(pairNames.map((name, i) => [name, pairs[i] && pairs[i].marketPrice]));
 
-                const pairData = await getMarketPriceSpot(coinQuery);
+    const expiryMs = settings.timingMinutes * 60 * 1000;
+    const now = Date.now();
 
-                var currentMarketPrice = pairData && pairData.marketPrice.toFixed(pairData.priceDecimal);
-                if (currentMarketPrice && GameData && GameData.length > 0) {
-                    for (let gameValue of GameData) {
-                        if (gameValue.predictionStatus == 0 && gameValue.pairName === activePair.pair) {
-
-                            let bustprice = gameValue && gameValue.bustprice
-                            let entryPrice = gameValue && gameValue.marketprice
-                            const placeBetTimeUTC = new Date(gameValue.dateTime).getTime();
-                            const currentTimeUTC = new Date().getTime();
-                            const timeDifference = currentTimeUTC - placeBetTimeUTC;
-                            const MinutesPassed = timeDifference >= milliseconds;
-
-                            if (MinutesPassed || currentMarketPrice == bustprice) {
-                                await optionsGameServices.closeBetService(gameValue, currentMarketPrice, "");
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.log("err : cr1 : liquidityPredictionCloseBet : ", error);
-    } finally {
-        liquidityCloseBet = false;
+    for (const bet of openBets) {
+      const price = priceByPair.get(bet.pairName);
+      if (!price) continue; // pair disabled or no price: leave the position open
+      const expired = now - new Date(bet.dateTime).getTime() >= expiryMs;
+      if (!expired && !game.isBusted(bet, price)) continue;
+      try {
+        await game.autoCloseBet(bet, price);
+      } catch (error) {
+        console.error("autoCloseBet error:", bet._id, error.message);
+      }
     }
-})
-
-
-
-
+  } catch (error) {
+    console.error("options close cron error:", error);
+  } finally {
+    closingRun = false;
+  }
+});

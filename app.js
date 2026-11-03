@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const http = require('http');
 const morgan = require('morgan');
 const cors = require('cors');
 const config = require("./config/config");
@@ -13,24 +12,22 @@ const apiRouter = require("./routes/base/apiRouter");
 const appapiRouter = require("./routes/base/appapiRouter");
 const admapiRouter = require("./routes/base/admapiRouter");
 const commonHelper = require('./helpers/common.helper');
-const socketHelper = require('./helpers/socket.helper');
+const optionsService = require('./services/options-game.services');
 const placeBetController = require('./controllers/place-bet.controller');
 
 const app = express();
-let port = config.port;
+const port = config.port;
 
-// view engine setup
 app.use(morgan("dev"));
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
 const allowedOrigins = new Set([
   "https://nvxo.io",
   "https://www.nvxo.io",
   "https://7lxqmpsow7obo7evycdsp.nvxo.io",
-  "http://localhost:3000",
-  "http://localhost:3001",
-].filter(Boolean));
+]);
 
 app.use(cors({
   origin(origin, callback) {
@@ -50,14 +47,7 @@ app.use('/webapi', commonHelper.middlewareWebapi, webapiRouter);
 app.use('/appapi', commonHelper.middlewareAppApi, appapiRouter);
 app.use('/admapi', commonHelper.middlewareAdmapi, admapiRouter);
 
-let server;
-if (config.serverType == 'http') {
-  let http = require('http');
-  server = http.createServer(app);
-} else {
-  let https = require('https');
-  server = https.createServer(config.options, app);
-}
+const server = require('http').createServer(app);
 server.listen(port, () => console.log('Express started'));
 
 const io = require("socket.io")(server, {
@@ -66,56 +56,51 @@ const io = require("socket.io")(server, {
   pingInterval: 30000,
   cookie: false,
 });
-socketHelper.SocketInit(io);
-// catch 404 and forward to error handler;
+optionsService.SocketInit(io);
+
+// Each request is answered to the asking socket only. User data is always the logged-in
+// user of that socket (cookie or token); a userLoginId sent by the client is never trusted.
+const onSocket = (socket, event, handler) => {
+  socket.on(event, async (data = {}) => {
+    try {
+      await handler(data || {});
+    } catch (error) {
+      console.log(`${event} socket error`, error.message);
+    }
+  });
+};
 
 io.on('connection', function (socket) {
-  console.log("A User connected");
-
-  socket.on('getUserBalance', async function (data) {
-    const UserBalance = await placeBetController.getUserGameWalletBalance(data);
-    if (UserBalance) {
-      io.sockets.emit('getUserBalanceResp', UserBalance);
-    }
-  })
-
-  socket.on('getTotalPairs', async function () {
-    const TotalPairsData = await placeBetController.getTotalPairs();
-    if (TotalPairsData) {
-      io.sockets.emit('getTotalPairsResp', TotalPairsData);
-    }
+  onSocket(socket, 'getTotalPairs', async () => {
+    socket.emit('getTotalPairsResp', await placeBetController.getTotalPairs());
   });
 
-  socket.on('getSelectedPair', async function (data) {
-    const pairdata = await placeBetController.getSelectedPairs(data);
-    if (pairdata) {
-      io.sockets.to(socket.id).emit('getSelectedPairResp', pairdata);
-    }
-  })
-
-  socket.on('getActiveBets', async function (data) {
-    const ActiveBets = await placeBetController.getUserBasedPrediction(data);
-    if (ActiveBets) {
-      io.sockets.to(socket.id).emit('getActiveBetsResp', ActiveBets);
-      io.sockets.emit("getActiveBetsRespMobile", ActiveBets)
-    }
-  })
-
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
+  onSocket(socket, 'getSelectedPair', async (pair) => {
+    socket.emit('getSelectedPairResp', await placeBetController.getSelectedPair(pair));
   });
 
+  onSocket(socket, 'getUserBalance', async (data) => {
+    const userId = await commonHelper.resolveSocketUser(socket, data);
+    if (!userId) return;
+    socket.emit('getUserBalanceResp', await placeBetController.getUserWalletBalance(userId, data.currencyId));
+  });
+
+  onSocket(socket, 'getActiveBets', async (data) => {
+    const userId = await commonHelper.resolveSocketUser(socket, data);
+    if (!userId) return;
+    const bets = await placeBetController.getUserPredictions(userId);
+    socket.emit('getActiveBetsResp', bets);
+    socket.emit('getActiveBetsRespMobile', bets);
+  });
 });
 
 app.use(function (req, res, next) {
   res.json({ status: false, message: 'Not found' });
 });
 
-// error handler
+// error handler (no view engine is configured, so answer with JSON)
 app.use(function (err, req, res, next) {
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-  res.status(err.status || 500);
-  res.render('error');
+  console.error("Unhandled error:", err.message);
+  res.status(err.status || 500).json({ status: false, message: "Something went wrong" });
 });
 module.exports = app;
