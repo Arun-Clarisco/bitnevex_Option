@@ -1,69 +1,38 @@
+// Development config - every value comes from .env (see .env.example)
 
-// Live 
-const dbName = 'bitnevex';
-const dbUser = "BitnevexAdmin";
-const dbPwd = "DL9xPAvawflsiqyiFy";
-const dbCluster = "178.105.63.233:27017";
+const path = require("path");
 
-let envname = process.env.NODE_ENV;
+require("dotenv").config({ path: path.join(__dirname, "../../.env") });
+
+const env = process.env;
+
+const REQUIRED = [
+	"DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST",
+	"JWT_TOKEN_ADMIN", "JWT_TOKEN_CUSTOMERS",
+	...Array.from({ length: 10 }, (_, i) => `REACT_APP_${i + 1}_ENCRYPTION_KEY`),
+];
+const missing = REQUIRED.filter((key) => !env[key]);
+if (missing.length) {
+	throw new Error(`Missing required environment variables in .env: ${missing.join(", ")}`);
+}
+
+const dbName = env.DB_NAME;
+const dbUser = encodeURIComponent(env.DB_USER);
+const dbPwd = encodeURIComponent(env.DB_PASSWORD);
+const dbOptions = env.DB_OPTIONS ? `?${env.DB_OPTIONS}` : "";
 
 module.exports = {
-	env: envname,
 	dbName: dbName,
-	dbconnection: `mongodb://${dbUser}:${dbPwd}@${dbCluster}/${dbName}?retryWrites=true&w=majority`,
-	caPath: "",
-	port: 3007,
-	passPhrase: '.S+X)Zmur=br;y+$2xjBfkJyTm1].v9-',
-	algorithm: 'aes-256-ctr',
-	iv: 'bLMjTTIuNUpWe345',
-	jwtTokenAdmin: '[pQ8v&wpx!Gn[f.2Ug',
-	jwtTokenCustomers: '2WHm-S!SMgnj3tA#3y',
-	primarySmtp: {
-		smtpDetails: {
-			keys: {
-				host: 'smtp.zeptomail.eu',
-				port: 587,
-				secure: false,
-				requireTLS: true,
-				auth: {
-					user: 'emailapikey',
-					pass: 'yA6KbHtT6Q/wl2JQQUQ80Jbf8Yw5//87gHu/5320e8ZyKNaziaFu1RM9ItCzJWfdiNCDsqkAY90QJIvov4sMLJBhYIdRK5TGTuv4P2uV48xh8ciEYNYvjJ6tArIXEqRMdhIsCSgzTvFt'
-				}
-			},
-			email: 'noreply@nvxo.io'
-		},
-		zeptomail_URL : "api.zeptomail.eu/v1.1/email",
-		zepto_Token : "Zoho-enczapikey yA6KbHtT6Q/wl2JQQUQ80Jbf8Yw5//87gHu/5320e8ZyKNaziaFu1RM9ItCzJWfdiNCDsqkAY90QJIvov4sMLJBhYIdRK5TGTuv4P2uV48xh8ciEYNYvjJ6tArIXEqRMdhIsCSgzTvFt"
-	},
-	serverType: 'http',
-	
-	// frontEnd: 'http://localhost:3000/',
-	// backEnd: 'http://localhost:3008/api/',
-	frontEnd: 'https://www.nvxo.io/',
-	backEnd: "https://options-api.nvxo.io/api/",
-	galleryLink: "https://www.nvxo.io/",
-	siteName: 'NVXO',
-	url: "nvxo.io",
-
-	timer: {
-		resendOtp: 120
-	},
-
-	FanTknSymbol: "NVX",
-
+	dbconnection: `mongodb://${dbUser}:${dbPwd}@${env.DB_HOST}/${dbName}${dbOptions}`,
+	caPath: env.DB_CA_PATH || "",
+	port: Number(env.PORT) || 4006,
+	jwtTokenAdmin: env.JWT_TOKEN_ADMIN,
+	jwtTokenCustomers: env.JWT_TOKEN_CUSTOMERS,
 	sectionStatus: {
-		optionsGameCron: "Enable"
+		optionsGameCron: env.OPTIONS_GAME_CRON === "Disable" ? "Disable" : "Enable"
 	},
 
-	REACT_APP_1_ENCRYPTION_KEY: "63rTB5BPxs7hG7cp90ocA1qBfFFp7A",
-	REACT_APP_2_ENCRYPTION_KEY: "z9L3fnQHWPv7uhurubpS1PyOLE3cJs",
-	REACT_APP_3_ENCRYPTION_KEY: "LFQXlSytfyR4QcWWevg3h8E8nFYpR9",
-	REACT_APP_4_ENCRYPTION_KEY: "dNmO47yN6PGMDdcr2Eh9MBr2INgzSo",
-	REACT_APP_5_ENCRYPTION_KEY: "t29M9ToRCq6qCZUoyaphHB9atDBlLs",
-	REACT_APP_6_ENCRYPTION_KEY: "5RV3SW3Fe4Nj2tlfRwgBJbYAaTdTRl",
-	REACT_APP_7_ENCRYPTION_KEY: "ID0ePgE1ysLKTUvvS9ZKl6UX2vYZEe",
-	REACT_APP_8_ENCRYPTION_KEY: "3gFbkEQdyveRqCn1axNXw5foyDkAwI",
-	REACT_APP_9_ENCRYPTION_KEY: "2Gzqn1SmSxBukKEVQgHlETohQohGd3",
-	REACT_APP_10_ENCRYPTION_KEY: "mKc8eUu0eKt3IiTHSYiICadzIwNHTK"
-
-}
+	...Object.fromEntries(
+		Array.from({ length: 10 }, (_, i) => [`REACT_APP_${i + 1}_ENCRYPTION_KEY`, env[`REACT_APP_${i + 1}_ENCRYPTION_KEY`]])
+	)
+};
