@@ -27,7 +27,10 @@ const allowedOrigins = new Set([
   "https://nvxo.io",
   "https://www.nvxo.io",
   "https://7lxqmpsow7obo7evycdsp.nvxo.io",
-]);
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://api-test-console.vercel.app/"
+].filter(Boolean));
 
 app.use(cors({
   origin(origin, callback) {
