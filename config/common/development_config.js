@@ -9,7 +9,6 @@ const env = process.env;
 const REQUIRED = [
 	"DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST",
 	"JWT_TOKEN_ADMIN", "JWT_TOKEN_CUSTOMERS",
-	...Array.from({ length: 10 }, (_, i) => `REACT_APP_${i + 1}_ENCRYPTION_KEY`),
 ];
 const missing = REQUIRED.filter((key) => !env[key]);
 if (missing.length) {
@@ -30,9 +29,5 @@ module.exports = {
 	jwtTokenCustomers: env.JWT_TOKEN_CUSTOMERS,
 	sectionStatus: {
 		optionsGameCron: env.OPTIONS_GAME_CRON === "Disable" ? "Disable" : "Enable"
-	},
-
-	...Object.fromEntries(
-		Array.from({ length: 10 }, (_, i) => [`REACT_APP_${i + 1}_ENCRYPTION_KEY`, env[`REACT_APP_${i + 1}_ENCRYPTION_KEY`]])
-	)
+	}
 };

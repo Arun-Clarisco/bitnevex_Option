@@ -2,8 +2,6 @@ const Mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
-const CryptoJS = require("crypto-js");
-const { decryptRequestPayload } = require("./cryptoJs.helper");
 const config = require("../config/config");
 
 const Users = Mongoose.model("Users");
@@ -116,35 +114,6 @@ exports.tokenMiddlewareAdmin = async (req, res, next) => {
     next();
   } catch (error) {
     return res.status(403).json({ status: false, message: "unauthorized" });
-  }
-};
-
-//** ---------- encrypted payload ---------- */
-
-const generateHash = (payloadData) => {
-  if (!payloadData || Object.keys(payloadData).length === 0) return "";
-  return CryptoJS.SHA512(JSON.stringify(payloadData)).toString(CryptoJS.enc.Hex);
-};
-
-exports.encMiddleWare = async (req, res, next) => {
-  try {
-    if (!req.body || Object.keys(req.body).length === 0) return next();
-
-    const { keyId, hash, payload } = req.body;
-    if (!payload || !hash || !keyId) {
-      return res.status(400).json({ status: false, message: "Missing encryption fields in request body." });
-    }
-    const decrypted = decryptRequestPayload(keyId, payload);
-    if (!decrypted) {
-      return res.status(400).json({ status: false, message: "Failed to decrypt the payload." });
-    }
-    if (generateHash(decrypted) !== hash) {
-      return res.status(400).json({ status: false, message: "Hash mismatch. Data integrity check failed." });
-    }
-    req.body = decrypted;
-    next();
-  } catch (error) {
-    return res.status(403).json({ status: false, message: "Decryption Failed!" });
   }
 };
 

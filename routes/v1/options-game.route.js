@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { PlaceBetController } = require("../../controllers");
-const { encMiddleWare, tokenMiddlewareCustomers } = require("../../helpers/common.helper");
+const { tokenMiddlewareCustomers } = require("../../helpers/common.helper");
 const { validate } = require("../../helpers/validator.helper");
 const { userCooldown } = require("../../helpers/cooldown.helper");
 const { MULTIPLIERS, DIRECTIONS, PAIR_PATTERN } = require("../../services/options-game.services");
@@ -29,11 +29,11 @@ const schemas = {
     },
 };
 
-router.post("/optionsGame", encMiddleWare, tokenMiddlewareCustomers, betLimiter, validate(schemas.placeBet), PlaceBetController.addNewPlacebit);
-router.post("/userClosedBet", encMiddleWare, tokenMiddlewareCustomers, betLimiter, validate(schemas.closeBet), PlaceBetController.closedBetFromUser);
+router.post("/optionsGame", tokenMiddlewareCustomers, betLimiter, validate(schemas.placeBet), PlaceBetController.addNewPlacebit);
+router.post("/userClosedBet", tokenMiddlewareCustomers, betLimiter, validate(schemas.closeBet), PlaceBetController.closedBetFromUser);
 router.post("/userOptionsGame", tokenMiddlewareCustomers, PlaceBetController.getUserBasedPrediction);
-router.post("/userOptionsGameWalletBalance", encMiddleWare, tokenMiddlewareCustomers, validate(schemas.currency), PlaceBetController.getUserGameWalletBalance);
-router.post("/getAllPairs", encMiddleWare, validate(schemas.currency), PlaceBetController.getAllPairs);
+router.post("/userOptionsGameWalletBalance", tokenMiddlewareCustomers, validate(schemas.currency), PlaceBetController.getUserGameWalletBalance);
+router.post("/getAllPairs", validate(schemas.currency), PlaceBetController.getAllPairs);
 router.get("/getCurrencySymbol", PlaceBetController.getCurrencySymbol);
 router.get("/getCompetion", tokenMiddlewareCustomers, PlaceBetController.getCompetion);
 router.get("/getSelectedPairs/:pair", validate(schemas.pairParam, "params"), PlaceBetController.getSelectedPairRoute);

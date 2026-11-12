@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { AdminController } = require("../../controllers");
-const { encMiddleWare, tokenMiddlewareAdmin } = require("../../helpers/common.helper");
+const { tokenMiddlewareAdmin } = require("../../helpers/common.helper");
 const { validate, validateObject } = require("../../helpers/validator.helper");
 const { DIRECTIONS, PAIR_PATTERN } = require("../../services/options-game.services");
 
@@ -27,7 +27,7 @@ const validateHistoryFilters = (req, res, next) => {
     next();
 };
 
-router.post("/getOptionsHistory", encMiddleWare, tokenMiddlewareAdmin, validate(historySchema), validateHistoryFilters, AdminController.getOptionsHistory);
+router.post("/getOptionsHistory", tokenMiddlewareAdmin, validate(historySchema), validateHistoryFilters, AdminController.getOptionsHistory);
 router.get("/getPairs", tokenMiddlewareAdmin, AdminController.getPairs);
 
 module.exports = router;
